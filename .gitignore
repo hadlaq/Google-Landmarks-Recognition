@@ -106,3 +106,5 @@ venv.bak/
 #data
 data/images/*
 data/metadata/*.csv
+
+.idea
