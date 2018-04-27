@@ -51,14 +51,14 @@ def download_image(images_folder, image_id, image_url):
         return
 
     try:
-        size = 480, 270
-        pil_image_rgb.thumbnail(size, Image.ANTIALIAS)
+        size = 512, 288
+        pil_image_small = pil_image_rgb.resize(size)
     except:
         print('Warning: Failed to resize image %s' % image_id)
         return
 
     try:
-        pil_image_rgb.save(fname, format='JPEG', quality=90)
+        pil_image_small.save(fname, format='JPEG', quality=90)
     except:
         print('Warning: Failed to save image %s' % fname)
         return
@@ -95,7 +95,6 @@ def main():
     num_categories = 5
     file_path = data_folder + "train.csv"
     list_of_categories = get_list_of_categories(num_categories, file_path)
-    print(list_of_categories)
     download_images(file_path, images_folder, list_of_categories)
 
 if __name__ == '__main__':
