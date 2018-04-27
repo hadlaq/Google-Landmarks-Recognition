@@ -11,6 +11,10 @@ from io import BytesIO
 
 
 def download_images(file_path, images_folder, list_of_categories):
+    if not os.path.exists(images_folder):
+        os.makedirs(images_folder)
+        print("Created " + images_folder)
+    
     csvfile = open(file_path, 'r')
     csvreader = csv.reader(csvfile)
     next(csvreader)
@@ -59,13 +63,12 @@ def download_image(images_folder, image_id, image_url):
         print('Warning: Failed to save image %s' % fname)
         return
 
-    print("hi")
-
 
 def get_list_of_categories(num_categories, file_path):
     data = pd.read_csv(file_path)
     temp = data.landmark_id.value_counts().tail(num_categories)
     return list(temp.index)
+
 
 def unzip_files(data_folder):
     files = ["train.csv", "test.csv", "sample_submission.csv"]
