@@ -14,7 +14,7 @@ def download_images(file_path, images_folder, list_of_categories):
     if not os.path.exists(images_folder):
         os.makedirs(images_folder)
         print("Created " + images_folder)
-    
+
     csvfile = open(file_path, 'r')
     csvreader = csv.reader(csvfile)
     next(csvreader)
@@ -67,7 +67,7 @@ def download_image(images_folder, image_id, image_url):
 def get_list_of_categories(num_categories, file_path):
     data = pd.read_csv(file_path)
     temp = data.landmark_id.value_counts().tail(num_categories)
-    return list(temp.index)
+    return [str(i) for i in temp.index]
 
 
 def unzip_files(data_folder):
