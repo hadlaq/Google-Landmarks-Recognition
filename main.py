@@ -28,7 +28,7 @@ def read_images_to_lists(paths_file, labels_file):
     with open(labels_file) as f:
         labels = f.readlines()
         labels = [x.strip() for x in labels]
-        labels_set = (labels)
+        labels_set = set(labels)
         labels_dict = {}
         i = 0
         for label in labels_set:
@@ -58,12 +58,13 @@ def get_dataset(paths_file, labels_file, batch_size):
     iterator = dataset.make_initializable_iterator()
     return dataset, iterator
 
-def train(model, images, labels, optimizer):
+def train(model, images, labels, optimizer, iterator_init_op):
     # device = '/gpu:0'
     device = '/cpu:0'
-    num_epochs = 1
+    num_epochs = 4
     with tf.device(device):
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=model)
+        print(model.output)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=model.output)
         loss = tf.reduce_mean(loss)
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -71,12 +72,19 @@ def train(model, images, labels, optimizer):
             train_ops = optimizer.minimize(loss)
 
 
-    with tf.session() as sess:
+    with tf.Session() as sess:
+        sess.run(iterator_init_op)
         sess.run(tf.global_variables_initializer())
         t = 0
         for epoch in range(num_epochs):
             print('Starting epoch %d' % epoch)
-            loss_np, _ = sess.run([loss, train_ops])
+            while True:
+                try:
+                    loss_np, _ = sess.run([loss, train_ops])
+                    print(loss_np)
+                except tf.errors.OutOfRangeError:
+                    break
+
 
 def main():
     args = parse_args()
@@ -87,20 +95,38 @@ def main():
 
     # with tf.Session() as sess:
     #     sess.run(iterator_init_op)
+    images.set_shape((None, 224, 224, 3))
     input_vals = tf.keras.layers.Input(tensor=images, shape=(224, 224, 3))
     print(images)
     print(input_vals)
-    vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', input_tensor=input_vals, include_top=False)
+    vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', include_top=False, input_tensor=input_vals, input_shape=(224, 224, 3))
+    print("############## ", vgg16.input_shape)
+    print("############## ", vgg16.output_shape)
 
-    predictions = tf.keras.layers.Dense(6)(vgg16.output)
-    model = tf.keras.Model(inputs=vgg16.input, outputs=predictions)
     for layer in vgg16.layers:
         layer.trainable = False
 
+    print(vgg16.output_shape[1:])
+
+    # top_model = tf.keras.Sequential()
+    # top_model.add(tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:]))
+    x = tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
+
+    x = tf.keras.layers.Dense(6)(x)
+
+    # add the model on top of the convolutional base
+    # vgg16.add(top_model)
+
+    # flat = tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
+    # print(flat)
+    # predictions = tf.keras.layers.Dense(6)(flat)
+    model = tf.keras.Model(inputs=vgg16.input, outputs=x)
+    # model = vgg16
+
         # model.fit(steps_per_epoch=1, epochs=5, verbose=2)
-    lr = 1e-3
+    lr = 1e-4
     optimizer = tf.train.AdamOptimizer(lr)
-    train(model, images, labels, optimizer)
+    train(model, images, labels, optimizer, iterator_init_op)
 
     # input = tf.keras.Input(tensor=images)
 
