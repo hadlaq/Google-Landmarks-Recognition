@@ -58,14 +58,21 @@ def get_dataset(paths_file, labels_file, batch_size):
     iterator = dataset.make_initializable_iterator()
     return dataset, iterator
 
+
+
 def train(model, images, labels, optimizer, iterator_init_op):
     # device = '/gpu:0'
     device = '/cpu:0'
     num_epochs = 4
     with tf.device(device):
-        print(model.output)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=model.output)
+        scores = model.output
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=scores)
         loss = tf.reduce_mean(loss)
+
+        y_pred = tf.argmax(scores, axis=1)
+
+        accuracy = tr.metrics.accuracy(labels, y_pred)
+
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
@@ -78,10 +85,15 @@ def train(model, images, labels, optimizer, iterator_init_op):
         t = 0
         for epoch in range(num_epochs):
             print('Starting epoch %d' % epoch)
+            i = 0
+            acc_sum = 0.0
             while True:
                 try:
-                    loss_np, _ = sess.run([loss, train_ops])
-                    print(loss_np)
+                    i += 1
+                    loss_np, _, acc = sess.run([loss, train_ops, accuracy])
+                    acc_sum += acc
+                    print('loss = ', loss_np)
+                    print('accuracy = ', acc_sum / i)
                 except tf.errors.OutOfRangeError:
                     break
 
