@@ -51,6 +51,26 @@ def get_dataset(paths_file, labels_file, batch_size):
     iterator = dataset.make_initializable_iterator()
     return dataset, iterator
 
+def train(model, dataset, iterator, optimizer):
+    # device = '/gpu:0'
+    device = '/cpu:0'
+    num_epochs = 1
+    with tf.device(device):
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=model)
+        loss = tf.reduce_mean(loss)
+
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            train_ops = optimizer.minimize(loss)
+
+
+    with tf.session() as sess:
+        sess.run(tf.global_variables_initializer())
+        print('Starting epoch %d' % epoch)
+        t = 0
+        for epoch in range(num_epochs):
+
+            loss_np, _ = sess.run([loss, train_ops])
 
 def main():
     args = parse_args()
@@ -59,24 +79,22 @@ def main():
     images, labels = iterator.get_next()
     iterator_init_op = iterator.initializer
 
-    with tf.Session() as sess:
-        sess.run(iterator_init_op)
-        input_vals = tf.keras.layers.Input(tensor=images, shape=(224, 224, 3))
-        print(images)
-        print(input_vals)
-        vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', input_tensor=input_vals, include_top=False)
-        # vgg16.layers.pop()
-        # vgg16.layers[-1].outbound_nodes = []
-        # vgg16.outputs = [vgg16.layers[-1].output]
-        # x = vgg16.output
-        predictions = tf.keras.layers.Dense(6, activation='softmax')(vgg16.output)
-        model = tf.keras.Model(inputs=vgg16.input, outputs=predictions)
-        for layer in vgg16.layers:
-            layer.trainable = False
+    # with tf.Session() as sess:
+    #     sess.run(iterator_init_op)
+    input_vals = tf.keras.layers.Input(tensor=images, shape=(224, 224, 3))
+    print(images)
+    print(input_vals)
+    vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', input_tensor=input_vals, include_top=False)
 
-        model.compile('rmsprop', 'categorical_crossentropy', target_tensors=[labels])
+    predictions = tf.keras.layers.Dense(6)(vgg16.output)
+    model = tf.keras.Model(inputs=vgg16.input, outputs=predictions)
+    for layer in vgg16.layers:
+        layer.trainable = False
+
         # model.fit(steps_per_epoch=1, epochs=5, verbose=2)
-
+    lr = 1e-3
+    optimizer = tf.nn.AdamOptimizer(lr)
+    train(model, dataset, iterator, optimizer)
 
     # input = tf.keras.Input(tensor=images)
 
