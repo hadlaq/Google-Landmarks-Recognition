@@ -35,7 +35,7 @@ def read_images_to_lists(paths_file, labels_file):
             labels_dict[label] = i
             i += 1
         labels = [labels_dict[x] for x in labels]
-    return filenames, labels
+    return filenames[:100], labels[:100]
 
 
 def image_parse_function(filename, label):
@@ -71,7 +71,7 @@ def train(model, images, labels, optimizer, iterator_init_op):
 
         y_pred = tf.argmax(scores, axis=1)
 
-        accuracy = tr.metrics.accuracy(labels, y_pred)
+        accuracy, update_op = tf.metrics.accuracy(labels, y_pred)
 
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -80,20 +80,22 @@ def train(model, images, labels, optimizer, iterator_init_op):
 
 
     with tf.Session() as sess:
-        sess.run(iterator_init_op)
         sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
         t = 0
         for epoch in range(num_epochs):
+            sess.run(iterator_init_op)
             print('Starting epoch %d' % epoch)
             i = 0
             acc_sum = 0.0
             while True:
                 try:
                     i += 1
-                    loss_np, _, acc = sess.run([loss, train_ops, accuracy])
+                    loss_np, _, acc, _ = sess.run([loss, train_ops, accuracy, update_op])
                     acc_sum += acc
                     print('loss = ', loss_np)
                     print('accuracy = ', acc_sum / i)
+                    print('accuracy = ', acc)
                 except tf.errors.OutOfRangeError:
                     break
 
