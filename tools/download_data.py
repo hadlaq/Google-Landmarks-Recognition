@@ -17,7 +17,7 @@ def download_images(file_path, images_folder, list_of_categories):
     csvfile = open(file_path, 'r')
     csvreader = csv.reader(csvfile)
     next(csvreader)
-    print_every = 1000
+    print_every = 100
     total = 0
     downloaded = 0
     downloaded_images = []
@@ -40,7 +40,7 @@ def write_paths_to_file(images_list):
     with open(file_path, "a") as f:
         for item in images_list:
             image, label = item
-            f.write(image + "," + label + "\n")
+            f.write(image + ".jpg" + "," + label + "\n")
 
 
 def download_image(images_folder, image_id, image_url):
@@ -70,7 +70,7 @@ def download_image(images_folder, image_id, image_url):
         return 0
 
     try:
-        size = 256, 256
+        size = 224, 224
         pil_image_small = pil_image_rgb.resize(size)
     except:
         # print('Warning: Failed to resize image %s' % image_id)

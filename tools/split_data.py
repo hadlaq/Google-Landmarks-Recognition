@@ -8,7 +8,7 @@ def writer(path, list):
     my_df = pd.DataFrame(list)
     my_df.to_csv(path, index=False, header=False)
 
-def Shuff(list1, list2):
+def shuff(list1, list2):
     zipped = list(zip(list1, list2))
     random.shuffle(zipped)
     tup1, tup2 = zip(*zipped)
@@ -19,7 +19,7 @@ def main():
 
     images = list(data[0])
     labels = list(data[1])
-    images, labels = Shuff(images, labels)
+    images, labels = shuff(images, labels)
 
     train_split = 0.9
     dev_split = 0.02
@@ -53,7 +53,7 @@ def test_shuff():
     a = [1,2,3]
     b = [4,5,6]
 
-    a, b = Shuff(a, b)
+    a, b = shuff(a, b)
     print(a, b)
 
 if __name__ == '__main__':

@@ -32,7 +32,7 @@ def read_images_to_lists(paths_file, labels_file):
 
 
 def image_parse_function(filename, label):
-    image_string = tf.read_file(filename)
+    image_string = tf.read_file("./data/images/" + filename)
     image_decoded = tf.image.decode_jpeg(image_string, channels=3)
     # Convert to float values between 0 and 1
     image = tf.image.convert_image_dtype(image_decoded, tf.float32)
@@ -47,12 +47,38 @@ def get_dataset(paths_file, labels_file, batch_size):
     # dataset = dataset.map(train_preprocess, num_parallel_calls=4)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
-    return dataset
+
+    iterator = dataset.make_initializable_iterator()
+    return dataset, iterator
 
 
 def main():
     args = parse_args()
+    dataset, iterator = get_dataset(args.train_images, args.train_labels, args.batch_size)
 
+    images, labels = iterator.get_next()
+    iterator_init_op = iterator.initializer
+
+    with tf.Session() as sess:
+        sess.run(iterator_init_op)
+        input_vals = tf.keras.layers.Input(tensor=images, shape=(224, 224, 3))
+        print(images)
+        print(input_vals)
+        vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', input_tensor=input_vals, include_top=False)
+        # vgg16.layers.pop()
+        # vgg16.layers[-1].outbound_nodes = []
+        # vgg16.outputs = [vgg16.layers[-1].output]
+        # x = vgg16.output
+        predictions = tf.keras.layers.Dense(6, activation='softmax')(vgg16.output)
+        model = tf.keras.Model(inputs=vgg16.input, outputs=predictions)
+        for layer in vgg16.layers:
+            layer.trainable = False
+
+        model.compile('rmsprop', 'categorical_crossentropy', target_tensors=[labels])
+        # model.fit(steps_per_epoch=1, epochs=5, verbose=2)
+
+
+    # input = tf.keras.Input(tensor=images)
 
 if __name__ == '__main__':
     main()
