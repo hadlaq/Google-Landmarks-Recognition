@@ -58,12 +58,12 @@ def get_dataset(paths_file, labels_file, batch_size):
     iterator = dataset.make_initializable_iterator()
     return dataset, iterator
 
-def train(model, dataset, iterator, optimizer):
+def train(model, images, labels, optimizer):
     # device = '/gpu:0'
     device = '/cpu:0'
     num_epochs = 1
     with tf.device(device):
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=model)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=model)
         loss = tf.reduce_mean(loss)
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -73,10 +73,9 @@ def train(model, dataset, iterator, optimizer):
 
     with tf.session() as sess:
         sess.run(tf.global_variables_initializer())
-        print('Starting epoch %d' % epoch)
         t = 0
         for epoch in range(num_epochs):
-
+            print('Starting epoch %d' % epoch)
             loss_np, _ = sess.run([loss, train_ops])
 
 def main():
@@ -100,8 +99,8 @@ def main():
 
         # model.fit(steps_per_epoch=1, epochs=5, verbose=2)
     lr = 1e-3
-    optimizer = tf.nn.AdamOptimizer(lr)
-    train(model, dataset, iterator, optimizer)
+    optimizer = tf.train.AdamOptimizer(lr)
+    train(model, images, labels, optimizer)
 
     # input = tf.keras.Input(tensor=images)
 
