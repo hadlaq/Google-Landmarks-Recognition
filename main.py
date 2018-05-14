@@ -1,22 +1,32 @@
 import tensorflow as tf
+from tensorflow import keras as k
 import argparse
+
+# Hide GPU warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
     # model params
-    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--batch_size', type=int, default=10, help='batch size')
+    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+    parser.add_argument('--batch_size', type=int, default=5, help='batch size')
 
     # training params
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
+
+    # logging
+    parser.add_argument('--print_batch', type=bool, default=False, help='print stats after each batch')
 
     # other params
     parser.add_argument('--train_images', type=str, default="./data/train_images.csv", help='Path to file of train images paths')
     parser.add_argument('--train_labels', type=str, default="./data/train_labels.csv", help='Path to file of train images labels')
     parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='Path to file of dev images paths')
     parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='Path to file of dev images labels')
+    parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
+    parser.add_argument('--classes', type=int, default=6, help='number of classes')
 
     return parser.parse_args()
 
@@ -55,94 +65,131 @@ def get_dataset(paths_file, labels_file, batch_size):
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 
-    iterator = dataset.make_initializable_iterator()
-    return dataset, iterator
+    return dataset
 
 
+def get_data(config):
+    dataset_train = get_dataset(config.train_images, config.train_labels, config.batch_size)
+    dataset_dev = get_dataset(config.dev_images, config.dev_labels, config.batch_size)
 
-def train(model, images, labels, optimizer, iterator_init_op):
-    # device = '/gpu:0'
-    device = '/cpu:0'
-    num_epochs = 4
-    with tf.device(device):
-        scores = model.output
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=scores)
-        loss = tf.reduce_mean(loss)
+    iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+    images, labels = iterator.get_next()
+    images.set_shape((None, config.input_size, config.input_size, 3))  # specify input shape
 
-        y_pred = tf.argmax(scores, axis=1)
+    train_init_op = iterator.make_initializer(dataset_train)
+    dev_init_op = iterator.make_initializer(dataset_dev)
 
-        accuracy, update_op = tf.metrics.accuracy(labels, y_pred)
+    # iterator = dataset_train.make_initializable_iterator()
+    # images, labels = iterator.get_next()
+    # images.set_shape((None, config.input_size, config.input_size, 3))  # specify input shape
+    # iterator_init_op = iterator.initializer
+
+    return images, labels, train_init_op, dev_init_op
 
 
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(update_ops):
-            train_ops = optimizer.minimize(loss)
+def train(model, data, config):
+    lr = config.lr
+    optimizer = tf.train.GradientDescentOptimizer(lr)
+    num_epochs = config.epochs
 
+    images, labels, train_init_op, dev_init_op = data
+
+    # with tf.device(device):
+    scores = model.output
+
+    # Fix later to use feedable iterators
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=scores)
+    loss = tf.reduce_mean(loss)
+    labels_pred = tf.argmax(scores, axis=1)
+    accuracy, accuracy_op = tf.metrics.accuracy(labels, labels_pred)
+    train_op = optimizer.minimize(loss)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
-        t = 0
-        for epoch in range(num_epochs):
-            sess.run(iterator_init_op)
-            print('Starting epoch %d' % epoch)
-            i = 0
-            acc_sum = 0.0
-            while True:
-                try:
-                    i += 1
-                    loss_np, _, acc, _ = sess.run([loss, train_ops, accuracy, update_op])
-                    acc_sum += acc
-                    print('loss = ', loss_np)
-                    print('accuracy = ', acc_sum / i)
-                    print('accuracy = ', acc)
-                except tf.errors.OutOfRangeError:
-                    break
+        for epoch in range(1, num_epochs + 1):
+            train_epoch(sess, train_init_op, loss, train_op, accuracy, accuracy_op, config, epoch)
+            eval_epoch(sess, dev_init_op, loss, accuracy, accuracy_op, config, epoch)
 
 
-def main():
-    args = parse_args()
-    dataset, iterator = get_dataset(args.train_images, args.train_labels, args.batch_size)
+def train_epoch(sess, iterator_init, loss, train_op, accuracy, accuracy_op, config, epoch):
+    sess.run(iterator_init)
+    iterations = 0
+    accuracy_sum = 0.0
+    loss_sum = 0.0
+    while True:
+        try:
+            current_loss, _, current_accuracy, _ = sess.run([loss, train_op, accuracy, accuracy_op])
+            iterations += 1
+            accuracy_sum += current_accuracy
+            loss_sum += current_loss
+            if config.print_batch:
+                print('Train loss =\t', current_loss)
+                print('Train running accuracy =\t', accuracy_sum / iterations)
+                print('Train current accuracy =\t', current_accuracy)
+        except tf.errors.OutOfRangeError:
+            print('Train epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
+            break
 
-    images, labels = iterator.get_next()
-    iterator_init_op = iterator.initializer
 
-    # with tf.Session() as sess:
-    #     sess.run(iterator_init_op)
-    images.set_shape((None, 224, 224, 3))
-    input_vals = tf.keras.layers.Input(tensor=images, shape=(224, 224, 3))
-    print(images)
-    print(input_vals)
-    vgg16 = tf.keras.applications.vgg16.VGG16(weights='imagenet', include_top=False, input_tensor=input_vals, input_shape=(224, 224, 3))
-    print("############## ", vgg16.input_shape)
-    print("############## ", vgg16.output_shape)
+def eval_epoch(sess, iterator_init, loss, accuracy, accuracy_op, config, epoch):
+    sess.run(iterator_init)
+    iterations = 0
+    accuracy_sum = 0.0
+    loss_sum = 0.0
+    while True:
+        try:
+            current_loss, current_accuracy, _ = sess.run([loss, accuracy, accuracy_op])
+            iterations += 1
+            accuracy_sum += current_accuracy
+            loss_sum += current_loss
+            if config.print_batch:
+                print('Eval loss =\t', current_loss)
+                print('Eval running accuracy =\t', current_loss / iterations)
+                print('Eval current accuracy =\t', current_accuracy)
+        except tf.errors.OutOfRangeError:
+            print('Eval epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
+            break
+
+
+def vgg16(config, images):
+    input_layer = k.layers.Input(tensor=images, shape=(config.input_size, config.input_size, 3))
+
+    vgg16 = k.applications.vgg16.VGG16(weights='imagenet', include_top=False,
+                                       input_tensor=input_layer, input_shape=(224, 224, 3))
 
     for layer in vgg16.layers:
         layer.trainable = False
 
-    print(vgg16.output_shape[1:])
+    output = k.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
+    output = k.layers.Dense(4096)(output)
+    output = k.layers.Dense(4096)(output)
+    output = k.layers.Dense(config.classes)(output)
 
-    # top_model = tf.keras.Sequential()
-    # top_model.add(tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:]))
-    x = tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
+    model = k.Model(inputs=vgg16.input, outputs=output)
+    return model
 
-    x = tf.keras.layers.Dense(6)(x)
 
-    # add the model on top of the convolutional base
-    # vgg16.add(top_model)
+def basic(config, images):
+    input_layer = k.layers.Input(tensor=images, shape=(config.input_size, config.input_size, 3))
+    output = k.layers.Flatten()(input_layer)
+    output = k.layers.Dense(512)(output)
+    output = k.layers.Dense(config.classes)(output)
 
-    # flat = tf.keras.layers.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
-    # print(flat)
-    # predictions = tf.keras.layers.Dense(6)(flat)
-    model = tf.keras.Model(inputs=vgg16.input, outputs=x)
-    # model = vgg16
+    model = k.Model(inputs=input_layer, outputs=output)
+    return model
 
-        # model.fit(steps_per_epoch=1, epochs=5, verbose=2)
-    lr = 1e-4
-    optimizer = tf.train.AdamOptimizer(lr)
-    train(model, images, labels, optimizer, iterator_init_op)
 
-    # input = tf.keras.Input(tensor=images)
+def main():
+    config = parse_args()
+
+    # Getting data
+    images, labels, train_init_op, dev_init_op = get_data(config)
+    data = (images, labels, train_init_op, dev_init_op)
+
+    model = basic(config, images)
+
+    train(model, data, config)
 
 if __name__ == '__main__':
     main()

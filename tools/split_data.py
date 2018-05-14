@@ -4,15 +4,18 @@
 import pandas as pd
 import random
 
+
 def writer(path, list):
     my_df = pd.DataFrame(list)
     my_df.to_csv(path, index=False, header=False)
+
 
 def shuff(list1, list2):
     zipped = list(zip(list1, list2))
     random.shuffle(zipped)
     tup1, tup2 = zip(*zipped)
     return list(tup1), list(tup2)
+
 
 def main():
     data = pd.read_csv('../data/all.csv', header=None, usecols=[0,1])
@@ -55,6 +58,7 @@ def test_shuff():
 
     a, b = shuff(a, b)
     print(a, b)
+
 
 if __name__ == '__main__':
     main()

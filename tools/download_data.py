@@ -9,6 +9,7 @@ from PIL import Image
 from io import BytesIO
 from tqdm import tqdm
 
+
 def download_images(file_path, images_folder, list_of_categories):
     if not os.path.exists(images_folder):
         os.makedirs(images_folder)
@@ -23,7 +24,7 @@ def download_images(file_path, images_folder, list_of_categories):
     downloaded_images = []
     for line in tqdm(csvreader):
         image_id, image_url, landmark_id = line
-        if landmark_id in list_of_categories:
+        if list_of_categories is None or landmark_id in list_of_categories:
             total += 1
             if download_image(images_folder, image_id, image_url):
                 downloaded += 1
@@ -85,6 +86,8 @@ def download_image(images_folder, image_id, image_url):
 
 
 def get_list_of_categories(num_categories, file_path):
+    if num_categories == -1:
+        return None
     data = pd.read_csv(file_path)
     temp = data.landmark_id.value_counts().head(num_categories)
     return [str(i) for i in temp.index]
@@ -112,7 +115,7 @@ def main():
     images_folder = '../data/images/'
     unzip_files(data_folder)
 
-    num_categories = 6
+    num_categories = 6  # -1 for all
     file_path = data_folder + "train.csv"
     list_of_categories = get_list_of_categories(num_categories, file_path)
     download_images(file_path, images_folder, list_of_categories)

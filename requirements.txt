@@ -1,1 +1,5 @@
 pillow
+tensorflow
+tqdm
+pandas
+h5py
