@@ -11,12 +11,16 @@ def vgg16(config, images):
     for layer in vgg16.layers:
         layer.trainable = False
 
-    output = k.layers.Flatten(input_shape=vgg16.output_shape[1:])(vgg16.output)
-    output = k.layers.Dense(4096)(output)
-    output = k.layers.Dense(4096)(output)
+    output = k.layers.Flatten()(vgg16.output)
+    # TODO: add regularizer?
+    output = k.layers.Flatten()(output)
+    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=k.regularizers.l2(config.reg))(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=k.regularizers.l2(config.reg))(output)
+    output = k.layers.Dropout(config.dropout)(output)
     output = k.layers.Dense(config.classes)(output)
-
     model = k.Model(inputs=vgg16.input, outputs=output)
+
     return model
 
 

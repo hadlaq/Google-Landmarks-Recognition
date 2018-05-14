@@ -14,8 +14,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # model params
-    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+    parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=5, help='batch size')
+    parser.add_argument('--reg', type=float, default=5e-4, help='regularization term')
+    parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
 
     # training params
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
@@ -48,52 +50,53 @@ def train(model, data, config):
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=scores)
     loss = tf.reduce_mean(loss)
     labels_pred = tf.argmax(scores, axis=1)
-    accuracy, accuracy_op = tf.metrics.accuracy(labels, labels_pred)
+    labels_pred = tf.to_int32(labels_pred)
+    accuracy = tf.reduce_mean(tf.to_float(tf.equal(labels, labels_pred)))
     train_op = optimizer.minimize(loss)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
         for epoch in range(1, num_epochs + 1):
-            train_epoch(sess, train_init_op, loss, train_op, accuracy, accuracy_op, config, epoch)
-            eval_epoch(sess, dev_init_op, loss, accuracy, accuracy_op, config, epoch)
+            train_epoch(sess, train_init_op, loss, train_op, accuracy, config, epoch)
+            eval_epoch(sess, dev_init_op, loss, accuracy, config, epoch)
 
 
-def train_epoch(sess, iterator_init, loss, train_op, accuracy, accuracy_op, config, epoch):
+def train_epoch(sess, iterator_init, loss, train_op, accuracy, config, epoch):
+    k.backend.set_learning_phase(1)
     sess.run(iterator_init)
     iterations = 0
     accuracy_sum = 0.0
     loss_sum = 0.0
     while True:
         try:
-            current_loss, _, current_accuracy, _ = sess.run([loss, train_op, accuracy, accuracy_op])
+            current_loss, _, current_accuracy = sess.run([loss, train_op, accuracy])
             iterations += 1
             accuracy_sum += current_accuracy
             loss_sum += current_loss
             if config.print_batch:
                 print('Train loss =\t', current_loss)
-                print('Train running accuracy =\t', accuracy_sum / iterations)
-                print('Train current accuracy =\t', current_accuracy)
+                print('Train accuracy =\t', current_accuracy)
         except tf.errors.OutOfRangeError:
             print('Train epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
             break
 
 
-def eval_epoch(sess, iterator_init, loss, accuracy, accuracy_op, config, epoch):
+def eval_epoch(sess, iterator_init, loss, accuracy, config, epoch):
+    k.backend.set_learning_phase(0)
     sess.run(iterator_init)
     iterations = 0
     accuracy_sum = 0.0
     loss_sum = 0.0
     while True:
         try:
-            current_loss, current_accuracy, _ = sess.run([loss, accuracy, accuracy_op])
+            current_loss, current_accuracy = sess.run([loss, accuracy])
             iterations += 1
             accuracy_sum += current_accuracy
             loss_sum += current_loss
             if config.print_batch:
                 print('Eval loss =\t', current_loss)
-                print('Eval running accuracy =\t', current_loss / iterations)
-                print('Eval current accuracy =\t', current_accuracy)
+                print('Eval accuracy =\t', current_accuracy)
         except tf.errors.OutOfRangeError:
             print('Eval epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
             break
@@ -106,8 +109,10 @@ def main():
     images, labels, train_init_op, dev_init_op = get_data(config)
     data = (images, labels, train_init_op, dev_init_op)
 
-    model = basic(config, images)
+    # Defining model
+    model = vgg16(config, images)
 
+    # Training
     train(model, data, config)
 
 if __name__ == '__main__':
