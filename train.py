@@ -1,9 +1,12 @@
 import tensorflow as tf
 from tensorflow import keras as k
 import argparse
+import logging
+import pickle
 
 from models import *
 from data_utils import *
+from model_utils import *
 
 # Hide GPU warnings
 import os
@@ -32,6 +35,7 @@ def parse_args():
     parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='Path to file of dev images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
     parser.add_argument('--classes', type=int, default=6, help='number of classes')
+    parser.add_argument('--logs_dir', type=str, default="./logs/", help='Path to best model')
 
     return parser.parse_args()
 
@@ -54,13 +58,38 @@ def train(model, data, config):
     accuracy = tf.reduce_mean(tf.to_float(tf.equal(labels, labels_pred)))
     train_op = optimizer.minimize(loss)
 
+    best_dev_acc = 0.0
+    best_model = None
+
+    train_loss_hist = []
+    train_acc_hist = []
+    dev_loss_hist = []
+    dev_acc_hist = []
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
         for epoch in range(1, num_epochs + 1):
-            train_epoch(sess, train_init_op, loss, train_op, accuracy, config, epoch)
-            eval_epoch(sess, dev_init_op, loss, accuracy, config, epoch)
+            logging.info('Epoch {}/{}'.format(epoch, num_epochs))
+            train_loss, train_acc = train_epoch(sess, train_init_op, loss, train_op, accuracy, config, epoch)
+            dev_loss, dev_acc = eval_epoch(sess, dev_init_op, loss, accuracy, config, epoch)
 
+            # append history
+            train_loss_hist.append(train_loss)
+            train_acc_hist.append(train_acc)
+            dev_loss_hist.append(dev_loss)
+            dev_acc_hist.append(dev_acc)
+
+            if dev_acc >= best_dev_acc:
+                best_dev_acc = dev_acc
+                save_path = os.path.join(config.logs_dir, 'best_model.h5')
+                best_model = model.save_weights(save_path) # using model.save throws errors with model.optimizer.get_config()
+                logging.info('Best model saved in {}'.format(save_path))
+
+    # Save histories
+    writer(os.path.join(config.logs_dir, 'train_loss_hist'), train_loss_hist)
+    writer(os.path.join(config.logs_dir, 'train_acc_hist'), train_acc_hist)
+    writer(os.path.join(config.logs_dir, 'dev_loss_hist'), dev_loss_hist)
+    writer(os.path.join(config.logs_dir, 'dev_acc_hist'), dev_acc_hist)
 
 def train_epoch(sess, iterator_init, loss, train_op, accuracy, config, epoch):
     k.backend.set_learning_phase(1)
@@ -75,12 +104,13 @@ def train_epoch(sess, iterator_init, loss, train_op, accuracy, config, epoch):
             accuracy_sum += current_accuracy
             loss_sum += current_loss
             if config.print_batch:
-                print('Train loss =\t', current_loss)
-                print('Train accuracy =\t', current_accuracy)
-        except tf.errors.OutOfRangeError:
-            print('Train epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
-            break
+                logging.info('Train loss =\t{}'.format(current_loss))
+                logging.info('Train accuracy =\t{}'.format(current_accuracy))
 
+        except tf.errors.OutOfRangeError:
+            logging.info('Train epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
+            break
+    return loss_sum / iterations, accuracy_sum / iterations
 
 def eval_epoch(sess, iterator_init, loss, accuracy, config, epoch):
     k.backend.set_learning_phase(0)
@@ -95,24 +125,37 @@ def eval_epoch(sess, iterator_init, loss, accuracy, config, epoch):
             accuracy_sum += current_accuracy
             loss_sum += current_loss
             if config.print_batch:
-                print('Eval loss =\t', current_loss)
-                print('Eval accuracy =\t', current_accuracy)
+                logging.info('Eval loss =\t{}'.format(current_loss))
+                logging.info('Eval accuracy =\t{}'.format(current_accuracy))
+
         except tf.errors.OutOfRangeError:
-            print('Eval epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
+            logging.info('Eval epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
             break
+    return loss_sum / iterations, accuracy_sum / iterations
 
 
 def main():
     config = parse_args()
 
+    exp_config = 'lr='+str(config.lr)+'_reg='+str(config.reg)+'_BS='+ \
+                  str(config.batch_size)+'_epochs='+str(config.epochs)+ \
+                  '_drop='+str(config.dropout)
+                  
+    config.logs_dir = os.path.join(config.logs_dir, exp_config)
+    if not os.path.exists(config.logs_dir):
+        os.makedirs(config.logs_dir)
+    set_logger(os.path.join(config.logs_dir, 'basic.log'))
     # Getting data
+    logging.info("Creating the datasets...")
     images, labels, train_init_op, dev_init_op = get_data(config)
     data = (images, labels, train_init_op, dev_init_op)
 
     # Defining model
-    model = vgg16(config, images)
+    # model = vgg16(config, images)
+    model = basic(config, images)
 
     # Training
+    logging.info("Starting training for {} epoch(s)".format(config.epochs))
     train(model, data, config)
 
 if __name__ == '__main__':
