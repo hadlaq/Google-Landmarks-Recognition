@@ -1,12 +1,11 @@
 import tensorflow as tf
 from tensorflow import keras as k
 import argparse
-import logging
-import pickle
+import logging as log
 
-from models import *
-from data_utils import *
 from model_utils import *
+from data_utils import *
+from logging_utils import *
 
 # Hide GPU warnings
 import os
@@ -16,161 +15,103 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # model params
-    parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
+    # model/training params
+    parser.add_argument('--model', type=str, default="vgg16", help='[basic, vgg16]')
+    parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam]')
+    parser.add_argument('--lr', type=float, default=2e-3, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=5, help='batch size')
-    parser.add_argument('--reg', type=float, default=5e-4, help='regularization term')
-    parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
-
-    # training params
-    parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
+    parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
+    parser.add_argument('--dropout', type=float, default=0.0, help='dropout probability')
+    parser.add_argument('--epochs', type=int, default=2, help='number of epochs')
 
     # logging
-    parser.add_argument('--print_batch', type=bool, default=False, help='print stats after each batch')
+    parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
+    parser.add_argument('--logs_dir', type=str, default="./logs/", help='path to best model')
 
     # other params
-    parser.add_argument('--train_images', type=str, default="./data/train_images.csv", help='Path to file of train images paths')
-    parser.add_argument('--train_labels', type=str, default="./data/train_labels.csv", help='Path to file of train images labels')
-    parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='Path to file of dev images paths')
-    parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='Path to file of dev images labels')
+    parser.add_argument('--train_images', type=str, default="./data/train_images.csv", help='path to file of train images paths')
+    parser.add_argument('--train_labels', type=str, default="./data/train_labels.csv", help='path to file of train images labels')
+    parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='path to file of dev images paths')
+    parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='path to file of dev images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
     parser.add_argument('--classes', type=int, default=6, help='number of classes')
-    parser.add_argument('--logs_dir', type=str, default="./logs/", help='Path to best model')
 
     return parser.parse_args()
 
 
+def train_epoch(model, data, config):
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
+    k.backend.get_session().run(train_init_op)
+    steps = int(train_size * 1.0 / config.batch_size)
+    steps = 100
+    history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose)
+
+    loss = history.history['loss'][-1]
+    accuracy = history.history['get_accuracy'][-1]
+    return loss, accuracy
+
+
+def eval_epoch(model, data, config):
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
+    k.backend.get_session().run(dev_init_op)
+    steps = int(dev_size * 1.0 / config.batch_size)
+    steps = 100
+    loss, accuracy = model.evaluate(steps=steps, verbose=config.verbose)
+
+    return loss, accuracy
+
+
 def train(model, data, config):
-    lr = config.lr
-    optimizer = tf.train.AdamOptimizer(lr)
     num_epochs = config.epochs
-
-    images, labels, train_init_op, dev_init_op = data
-
-    # with tf.device(device):
-    scores = model.output
-
-    # Fix later to use feedable iterators
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=scores)
-    loss = tf.reduce_mean(loss)
-    labels_pred = tf.argmax(scores, axis=1)
-    labels_pred = tf.to_int32(labels_pred)
-    accuracy = tf.reduce_mean(tf.to_float(tf.equal(labels, labels_pred)))
-    train_op = optimizer.minimize(loss)
-
-    best_dev_acc = 0.0
-    best_model = None
 
     train_loss_hist = []
     train_acc_hist = []
     dev_loss_hist = []
     dev_acc_hist = []
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
-        for epoch in range(1, num_epochs + 1):
-            logging.info('Epoch {}/{}'.format(epoch, num_epochs))
-            train_loss, train_acc = train_epoch(sess, train_init_op, loss, train_op, accuracy, config, epoch)
-            dev_loss, dev_acc = eval_epoch(sess, dev_init_op, loss, accuracy, config, epoch)
+    best_dev_acc = 0.0
+    for epoch in range(1, num_epochs + 1):
+        logging.info('Epoch {}/{}'.format(epoch, num_epochs))
 
-            # append history
-            train_loss_hist.append(train_loss)
-            train_acc_hist.append(train_acc)
-            dev_loss_hist.append(dev_loss)
-            dev_acc_hist.append(dev_acc)
+        train_loss, train_acc = train_epoch(model, data, config)
+        logging.info('Train loss %f accuracy %f' % (train_loss, train_acc))
 
-            if dev_acc > best_dev_acc:
-                best_dev_acc = dev_acc
-                save_path = os.path.join(config.logs_dir, 'best_model.h5')
-                best_model = model.save_weights(save_path) # using model.save throws errors with model.optimizer.get_config()
-                logging.info('Best model saved in {}'.format(save_path))
+        dev_loss, dev_acc = eval_epoch(model, data, config)
+        logging.info('Dev loss %f accuracy %f' % (dev_loss, dev_acc))
 
-    # Save histories
-    writer(os.path.join(config.logs_dir, 'train_loss_hist'), train_loss_hist)
-    writer(os.path.join(config.logs_dir, 'train_acc_hist'), train_acc_hist)
-    writer(os.path.join(config.logs_dir, 'dev_loss_hist'), dev_loss_hist)
-    writer(os.path.join(config.logs_dir, 'dev_acc_hist'), dev_acc_hist)
+        # append history
+        train_loss_hist.append(train_loss)
+        train_acc_hist.append(train_acc)
+        dev_loss_hist.append(dev_loss)
+        dev_acc_hist.append(dev_acc)
 
-def train_epoch(sess, iterator_init, loss, train_op, accuracy, config, epoch):
-    k.backend.set_learning_phase(1)
-    sess.run(iterator_init)
-    iterations = 0
-    accuracy_sum = 0.0
-    loss_sum = 0.0
-    while True:
-        try:
-            current_loss, _, current_accuracy = sess.run([loss, train_op, accuracy])
-            iterations += 1
-            accuracy_sum += current_accuracy
-            loss_sum += current_loss
-            if config.print_batch:
-                logging.info('Train loss =\t{}'.format(current_loss))
-                logging.info('Train accuracy =\t{}'.format(current_accuracy))
+        # save best model
+        if dev_acc > best_dev_acc:
+            best_dev_acc = dev_acc
+            save_model(model, config)
 
-        except tf.errors.OutOfRangeError:
-            logging.info('Train epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
-            break
-    return loss_sum / iterations, accuracy_sum / iterations
+    # save histories
+    write_object(train_loss_hist, 'train_loss_hist', config)
+    write_object(train_acc_hist, 'train_acc_hist', config)
+    write_object(dev_loss_hist, 'dev_loss_hist', config)
+    write_object(dev_acc_hist, 'dev_acc_hist', config)
 
-def eval_epoch(sess, iterator_init, loss, accuracy, config, epoch):
-    k.backend.set_learning_phase(0)
-    sess.run(iterator_init)
-    iterations = 0
-    accuracy_sum = 0.0
-    loss_sum = 0.0
-    while True:
-        try:
-            current_loss, current_accuracy = sess.run([loss, accuracy])
-            iterations += 1
-            accuracy_sum += current_accuracy
-            loss_sum += current_loss
-            if config.print_batch:
-                logging.info('Eval loss =\t{}'.format(current_loss))
-                logging.info('Eval accuracy =\t{}'.format(current_accuracy))
-
-        except tf.errors.OutOfRangeError:
-            logging.info('Eval epoch %d loss %f accuracy %f' % (epoch, loss_sum / iterations, accuracy_sum / iterations))
-            break
-    return loss_sum / iterations, accuracy_sum / iterations
-
-def keras_train(model, data, config):
-    lr = config.lr
-    optimizer = tf.train.GradientDescentOptimizer(lr)
-    num_epochs = config.epochs
-    images, labels, train_init_op, dev_init_op = data
-
-    model.compile(optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    history = model.fit(batch_size=config.batch_size, epochs=num_epochs)
-
-    writer(os.path.join(config.logs_dir, 'training_history'), history)
 
 def main():
     config = parse_args()
-    model_type = 'vgg16_m'
-    exp_config = model_type+'_lr='+str(config.lr)+'_reg='+str(config.reg)+'_BS='+ \
-                  str(config.batch_size)+'_epochs='+str(config.epochs)+ \
-                  '_drop='+str(config.dropout)
+    set_logger(config)
 
-    config.logs_dir = os.path.join(config.logs_dir, exp_config)
-    if not os.path.exists(config.logs_dir):
-        os.makedirs(config.logs_dir)
-    set_logger(os.path.join(config.logs_dir, model_type+'.log'))
+    # Log full params for this run
+    log.info(config)
+
     # Getting data
-    logging.info("Creating the datasets...")
-    images, labels, train_init_op, dev_init_op = get_data(config)
-    data = (images, labels, train_init_op, dev_init_op)
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = get_data(config)
+    data = (images, labels, train_size, dev_size, train_init_op, dev_init_op)
 
     # Defining model
-    # model = resnet50(config, images)
-    # model = vgg18(config, images)
-    # model = vgg16(config, images)
-    model = vgg16_m(config, images)
-    # model = basic(config, images)
-    # print(model.summary())
-    # Training
-    logging.info("Starting training for {} epoch(s)".format(config.epochs))
+    model = get_model(config, images, labels)
+
     train(model, data, config)
-    # keras_train(model, data, config)
+
 
 if __name__ == '__main__':
     main()

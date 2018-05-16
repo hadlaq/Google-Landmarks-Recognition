@@ -108,4 +108,6 @@ data/images/*
 data/metadata/*.csv
 data/*.csv
 
-.idea
+.idea/
+
+*.h5

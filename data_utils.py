@@ -1,4 +1,5 @@
 import tensorflow as tf
+import logging
 
 
 def read_images_to_lists(paths_file, labels_file):
@@ -35,12 +36,12 @@ def get_dataset(paths_file, labels_file, batch_size):
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 
-    return dataset
+    return dataset, len(filenames)
 
 
 def get_data(config):
-    dataset_train = get_dataset(config.train_images, config.train_labels, config.batch_size)
-    dataset_dev = get_dataset(config.dev_images, config.dev_labels, config.batch_size)
+    dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size)
+    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     images, labels = iterator.get_next()
@@ -49,4 +50,6 @@ def get_data(config):
     train_init_op = iterator.make_initializer(dataset_train)
     dev_init_op = iterator.make_initializer(dataset_dev)
 
-    return images, labels, train_init_op, dev_init_op
+    logging.info("Received {} train points, {} dev points.".format(train_size, dev_size))
+
+    return images, labels, train_size, dev_size, train_init_op, dev_init_op
