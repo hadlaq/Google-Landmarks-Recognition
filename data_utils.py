@@ -15,7 +15,7 @@ def read_images_to_lists(paths_file, labels_file):
             labels_dict[label] = i
             i += 1
         labels = [labels_dict[x] for x in labels]
-    return filenames[:100], labels[:100]
+    return filenames, labels
 
 
 def image_parse_function(filename, label):

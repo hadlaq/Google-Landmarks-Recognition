@@ -42,7 +42,7 @@ def parse_args():
 
 def train(model, data, config):
     lr = config.lr
-    optimizer = tf.train.GradientDescentOptimizer(lr)
+    optimizer = tf.train.AdamOptimizer(lr)
     num_epochs = config.epochs
 
     images, labels, train_init_op, dev_init_op = data
@@ -79,7 +79,7 @@ def train(model, data, config):
             dev_loss_hist.append(dev_loss)
             dev_acc_hist.append(dev_acc)
 
-            if dev_acc >= best_dev_acc:
+            if dev_acc > best_dev_acc:
                 best_dev_acc = dev_acc
                 save_path = os.path.join(config.logs_dir, 'best_model.h5')
                 best_model = model.save_weights(save_path) # using model.save throws errors with model.optimizer.get_config()
@@ -133,30 +133,44 @@ def eval_epoch(sess, iterator_init, loss, accuracy, config, epoch):
             break
     return loss_sum / iterations, accuracy_sum / iterations
 
+def keras_train(model, data, config):
+    lr = config.lr
+    optimizer = tf.train.GradientDescentOptimizer(lr)
+    num_epochs = config.epochs
+    images, labels, train_init_op, dev_init_op = data
+
+    model.compile(optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    history = model.fit(batch_size=config.batch_size, epochs=num_epochs)
+
+    writer(os.path.join(config.logs_dir, 'training_history'), history)
 
 def main():
     config = parse_args()
-
-    exp_config = 'lr='+str(config.lr)+'_reg='+str(config.reg)+'_BS='+ \
+    model_type = 'vgg16_m'
+    exp_config = model_type+'_lr='+str(config.lr)+'_reg='+str(config.reg)+'_BS='+ \
                   str(config.batch_size)+'_epochs='+str(config.epochs)+ \
                   '_drop='+str(config.dropout)
-                  
+
     config.logs_dir = os.path.join(config.logs_dir, exp_config)
     if not os.path.exists(config.logs_dir):
         os.makedirs(config.logs_dir)
-    set_logger(os.path.join(config.logs_dir, 'basic.log'))
+    set_logger(os.path.join(config.logs_dir, model_type+'.log'))
     # Getting data
     logging.info("Creating the datasets...")
     images, labels, train_init_op, dev_init_op = get_data(config)
     data = (images, labels, train_init_op, dev_init_op)
 
     # Defining model
+    # model = resnet50(config, images)
+    # model = vgg18(config, images)
     # model = vgg16(config, images)
-    model = basic(config, images)
-
+    model = vgg16_m(config, images)
+    # model = basic(config, images)
+    # print(model.summary())
     # Training
     logging.info("Starting training for {} epoch(s)".format(config.epochs))
     train(model, data, config)
+    # keras_train(model, data, config)
 
 if __name__ == '__main__':
     main()
