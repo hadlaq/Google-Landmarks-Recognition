@@ -43,7 +43,7 @@ def train_epoch(model, data, config):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(train_init_op)
     steps = int(train_size * 1.0 / config.batch_size)
-    steps = 100
+    # steps = 100
     history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose)
 
     loss = history.history['loss'][-1]
@@ -54,8 +54,11 @@ def train_epoch(model, data, config):
 def eval_epoch(model, data, config):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(dev_init_op)
+    print(dev_size)
+    print(config.batch_size)
     steps = int(dev_size * 1.0 / config.batch_size)
-    steps = 100
+    # steps = 100
+    steps = 1
     loss, accuracy = model.evaluate(steps=steps, verbose=config.verbose)
 
     return loss, accuracy

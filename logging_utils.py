@@ -6,7 +6,7 @@ import os
 
 def get_log_path(config):
     exp_config = 'model=' + config.model +\
-                 '_optimizer' + config.optimizer +\
+                 '_optimizer:' + config.optimizer +\
                  '_lr=' + str(config.lr) +\
                  '_reg=' + str(config.reg) +\
                  '_batch_size=' + str(config.batch_size) +\
@@ -79,5 +79,5 @@ def save_model(model, config):
         i += 1
         save_path = os.path.join(config.logs_dir, get_log_path(config), 'best_model' + str(i) + '.h5')
 
-    model.save_weights(save_path)  # TODO: use model.save?
+    model.save(save_path)
     logging.info('Best model saved in {}'.format(save_path))
