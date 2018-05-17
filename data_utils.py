@@ -9,7 +9,7 @@ def read_images_to_lists(paths_file, labels_file):
     with open(labels_file) as f:
         labels = f.readlines()
         labels = [x.strip() for x in labels]
-        labels_set = set(labels)
+        labels_set = sorted(list(set(labels)))
         labels_dict = {}
         i = 0
         for label in labels_set:

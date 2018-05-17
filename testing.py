@@ -93,8 +93,8 @@ def main():
     data = (images, labels, test_size, test_init_op)
 
     # Load model
-    # model = load_model(config, images, labels)
-    # test(model, data, config)
+    model = load_model(config, images, labels)
+    test(model, data, config)
 
     model = load_model_with_no_input(config)
     test_GAP(model, data, config)
