@@ -4,9 +4,14 @@ from tensorflow import keras as k
 
 def vgg16(config, images):
     input_layer = k.layers.Input(tensor=images)
-    vgg16 = k.applications.vgg16.VGG16(weights='imagenet', include_top=False, input_tensor=input_layer)
-    for layer in vgg16.layers:
-        layer.trainable = False
+    if config.imagenet:
+        vgg16 = k.applications.vgg16.VGG16(weights='imagenet', include_top=False, input_tensor=input_layer)
+    else:
+        vgg16 = k.applications.vgg16.VGG16(include_top=False, input_tensor=input_layer)
+
+    if config.freeze:
+        for layer in vgg16.layers:
+            layer.trainable = False
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(vgg16.output)
@@ -22,8 +27,22 @@ def vgg16(config, images):
 
 def basic(config, images):
     input_layer = k.layers.Input(tensor=images, shape=(config.input_size, config.input_size, 3))
-    output = k.layers.Flatten()(input_layer)
-    output = k.layers.Dense(512, activation='relu')(output)
+
+    output = k.layers.Conv2D(32, (3, 3),)(input_layer)
+    output = k.layers.Activation('relu')(output)
+    output = k.layers.MaxPooling2D(pool_size=(2, 2))(output)
+
+    output = k.layers.Conv2D(32, (3, 3),)(output)
+    output = k.layers.Activation('relu')(output)
+    output = k.layers.MaxPooling2D(pool_size=(2, 2))(output)
+
+    output = k.layers.Conv2D(64, (3, 3),)(output)
+    output = k.layers.Activation('relu')(output)
+    output = k.layers.MaxPooling2D(pool_size=(2, 2))(output)
+
+    output = k.layers.Flatten()(output)
+    output = k.layers.Dense(4096, activation='relu')(output)
+    output = k.layers.Dense(4096, activation='relu')(output)
     output = k.layers.Dense(config.classes)(output)
 
     model = k.Model(inputs=input_layer, outputs=output)

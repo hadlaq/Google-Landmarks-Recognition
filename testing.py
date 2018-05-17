@@ -15,28 +15,16 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # model/training params
-    parser.add_argument('--model', type=str, default="vgg16", help='[basic, vgg16]')
-    parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam]')
-    parser.add_argument('--lr', type=float, default=2e-3, help='learning rate')
-    parser.add_argument('--batch_size', type=int, default=5, help='batch size')
-    parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
-    parser.add_argument('--dropout', type=float, default=0.0, help='dropout probability')
-    parser.add_argument('--epochs', type=int, default=2, help='number of epochs')
-    parser.add_argument('--imagenet', type=bool, default=True, help='Use imagenet weights')
-    parser.add_argument('--freeze', type=bool, default=True, help='Freeze imagenet weights')
-
     # logging
     parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
-    parser.add_argument('--logs_dir', type=str, default="./logs/", help='path to best model')
 
     # other params
-    parser.add_argument('--train_images', type=str, default="./data/train_images.csv", help='path to file of train images paths')
-    parser.add_argument('--train_labels', type=str, default="./data/train_labels.csv", help='path to file of train images labels')
-    parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='path to file of dev images paths')
-    parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='path to file of dev images labels')
+    parser.add_argument('--model_path', type=str, default="./logs/dir/best_model.h5", help='path to model to test')
+    parser.add_argument('--model_dir', type=str, default="./logs/dir/", help='path to model to test')
+    parser.add_argument('--test_images', type=str, default="./data/test_images.csv", help='path to file of test images paths')
+    parser.add_argument('--test_labels', type=str, default="./data/test_labels.csv", help='path to file of test images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
-    parser.add_argument('--classes', type=int, default=6, help='number of classes')
+    parser.add_argument('--batch_size', type=int, default=5, help='batch size')
 
     return parser.parse_args()
 
@@ -100,7 +88,7 @@ def train(model, data, config):
 
 def main():
     config = parse_args()
-    set_logger(config)
+    set_test_logger(config)
 
     # Log full params for this run
     log.info(config)

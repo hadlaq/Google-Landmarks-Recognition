@@ -53,3 +53,17 @@ def get_data(config):
     logging.info("Received {} train points, {} dev points.".format(train_size, dev_size))
 
     return images, labels, train_size, dev_size, train_init_op, dev_init_op
+
+
+def get_test_data(config):
+    test_dataset, test_size = get_dataset(config.test_images, config.test_labels, config.batch_size)
+
+    iterator = tf.data.Iterator.from_structure(test_dataset.output_types, test_dataset.output_shapes)
+    images, labels = iterator.get_next()
+    images.set_shape((None, config.input_size, config.input_size, 3))  # specify input shape
+
+    test_init_op = iterator.make_initializer(test_dataset)
+
+    logging.info("Received {} test points.".format(test_size))
+
+    return images, labels, test_size, test_init_op
