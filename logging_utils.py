@@ -15,18 +15,23 @@ def get_log_path(config):
 
     return exp_config
 
+def count_dirs(path):
+    dirs = [f for f in os.listdir(path) if not os.path.isfile(os.path.join(path, f))]
+    return len(dirs)
 
 def set_logger(config):
     # Based on used parameters
     log_dir = os.path.join(config.logs_dir, get_log_path(config))
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
+        log_dir = os.path.join(log_dir, '1')
+        os.makedirs(log_dir)
+    else:
+        log_dir = os.path.join(log_dir, str(count_dirs(log_dir) + 1))
+        os.makedirs(log_dir)
+
 
     log_file_path = os.path.join(log_dir, 'console.log')
-    i = 0
-    while os.path.exists(log_file_path):
-        i += 1
-        log_file_path = os.path.join(log_dir, 'console' + str(i) + '.log')
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -45,10 +50,6 @@ def set_logger(config):
 
 def set_test_logger(config):
     log_file_path = os.path.join(config.model_dir, 'test.log')
-    i = 0
-    while os.path.exists(log_file_path):
-        i += 1
-        log_file_path = os.path.join(config.model_dir, 'test' + str(i) + '.log')
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -93,3 +94,7 @@ def write_object(obj, name, config):
 
     writer(path, obj)
 
+def test():
+    print(count_dirs('logs'))
+
+test()

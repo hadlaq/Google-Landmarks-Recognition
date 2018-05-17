@@ -62,7 +62,7 @@ def eval_epoch(model, data, config):
     return loss, accuracy
 
 
-def train(model, data, config):
+def train(model, data, config, log_dir):
     num_epochs = config.epochs
 
     train_loss_hist = []
@@ -70,7 +70,6 @@ def train(model, data, config):
     dev_loss_hist = []
     dev_acc_hist = []
     best_dev_acc = 0.0
-    best_model = None
     for epoch in range(1, num_epochs + 1):
         logging.info('Epoch {}/{}'.format(epoch, num_epochs))
 
@@ -85,14 +84,16 @@ def train(model, data, config):
         train_acc_hist.append(train_acc)
         dev_loss_hist.append(dev_loss)
         dev_acc_hist.append(dev_acc)
+        # save histories
+        write_object(train_loss_hist, 'train_loss_hist', config)
+        write_object(train_acc_hist, 'train_acc_hist', config)
+        write_object(dev_loss_hist, 'dev_loss_hist', config)
+        write_object(dev_acc_hist, 'dev_acc_hist', config)
 
         # save best model
         if dev_acc > best_dev_acc:
             best_dev_acc = dev_acc
-            if best_model is None:
-                best_model = save_model(model, config)
-            else:
-                force_save_model(model, best_model)
+            save_model(model, config, log_dir)
 
     # save histories
     write_object(train_loss_hist, 'train_loss_hist', config)
@@ -103,7 +104,7 @@ def train(model, data, config):
 
 def main():
     config = parse_args()
-    set_logger(config)
+    log_dir = set_logger(config)
 
     # Log full params for this run
     log.info(config)
@@ -115,7 +116,7 @@ def main():
     # Defining model
     model = get_model(config, images, labels)
 
-    train(model, data, config)
+    train(model, data, config, log_dir)
 
 
 if __name__ == '__main__':

@@ -42,24 +42,12 @@ def get_model(config, images, labels):
     return model
 
 
-
-
-def save_model(model, config):
-    save_path = os.path.join(config.logs_dir, get_log_path(config), 'best_model.h5')
-    i = 0
-    while os.path.exists(save_path):
-        i += 1
-        save_path = os.path.join(config.logs_dir, get_log_path(config), 'best_model' + str(i) + '.h5')
-
+def save_model(model, config, log_dir):
+    save_path = os.path.join(log_dir, 'best_model.h5')
     model.save(save_path)
     logging.info('Best model saved in {}'.format(save_path))
 
     return save_path
-
-
-def force_save_model(model, save_path):
-    model.save(save_path)
-    logging.info('Best model saved in {}'.format(save_path))
 
 
 def load_model(config, images, labels):

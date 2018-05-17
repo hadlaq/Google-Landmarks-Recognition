@@ -21,7 +21,6 @@ def parse_args():
     parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
 
     # other params
-    parser.add_argument('--model_path', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.001_reg=5e-05_batch_size=10_epochs=5_dropout=0.0/best_model.h5", help='path to model to test')
     parser.add_argument('--model_dir', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.001_reg=5e-05_batch_size=10_epochs=5_dropout=0.0/", help='path to model to test')
     parser.add_argument('--test_images', type=str, default="./data/test_images.csv", help='path to file of test images paths')
     parser.add_argument('--test_labels', type=str, default="./data/test_labels.csv", help='path to file of test images labels')
