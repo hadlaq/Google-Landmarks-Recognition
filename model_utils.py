@@ -27,6 +27,8 @@ def get_optimizer(config):
 def get_model(config, images, labels):
     if config.model == "vgg16":
         model = vgg16(config, images)
+    elif config.model == "resnet50":
+        model = resnet50(config, images)
     else:
         model = basic(config, images)
 

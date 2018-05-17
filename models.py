@@ -8,7 +8,7 @@ def resnet50(config, images):
     else:
         resnet = k.applications.resnet50.ResNet50(include_top=False, input_tensor=input_layer)
     if config.freeze:
-        for layer in vgg16.layers:
+        for layer in resnet.layers:
             layer.trainable = False
 
     L2 = k.regularizers.l2(config.reg)
