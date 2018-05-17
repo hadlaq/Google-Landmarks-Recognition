@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras as k
+import numpy as np
 import argparse
 import logging as log
 import numpy as np
@@ -30,69 +31,39 @@ def parse_args():
     return parser.parse_args()
 
 
-def train_epoch(model, data, config):
-    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
-    k.backend.get_session().run(train_init_op)
-    steps = int(train_size * 1.0 / config.batch_size)
-    history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose)
-
-    loss = history.history['loss'][-1]
-    accuracy = history.history['get_accuracy'][-1]
-    return loss, accuracy
-
-
-def eval_epoch(model, data, config):
-    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
-    k.backend.get_session().run(dev_init_op)
-    print(dev_size)
-    print(config.batch_size)
-    steps = int(dev_size * 1.0 / config.batch_size)
+def test(model, data, config):
+    images, labels, test_size, test_init_op = data
+    k.backend.get_session().run(test_init_op)
+    steps = int(test_size * 1.0 / config.batch_size)
     loss, accuracy = model.evaluate(steps=steps, verbose=config.verbose)
+    logging.info('Test loss %f accuracy %f' % (loss, accuracy))
 
-    return loss, accuracy
+    k.backend.get_session().run(test_init_op)
+    Y = None
+    Y_pred = None
+    while True:
+        try:
+            x = k.backend.get_session().run(images)
+            y = k.backend.get_session().run(labels)
+            y_pred = model.predict(x, batch_size=x.shape[0], verbose=config.verbose)
 
+            if Y is None:
+                Y = y
+                Y_pred = Y_pred
+            else:
+                Y = np.concatenate((Y, y), axis=0)
+                Y_pred = np.concatenate((Y_pred, y_pred), axis=0)
+        except tf.errors.OutOfRangeError:
+            break
 
-def train(model, data, config):
-    num_epochs = config.epochs
+    logging.info(GAP(Y_pred, Y))
 
-    train_loss_hist = []
-    train_acc_hist = []
-    dev_loss_hist = []
-    dev_acc_hist = []
-    best_dev_acc = 0.0
-    for epoch in range(1, num_epochs + 1):
-        logging.info('Epoch {}/{}'.format(epoch, num_epochs))
-
-        train_loss, train_acc = train_epoch(model, data, config)
-        logging.info('Train loss %f accuracy %f' % (train_loss, train_acc))
-
-        dev_loss, dev_acc = eval_epoch(model, data, config)
-        logging.info('Dev loss %f accuracy %f' % (dev_loss, dev_acc))
-
-        # append history
-        train_loss_hist.append(train_loss)
-        train_acc_hist.append(train_acc)
-        dev_loss_hist.append(dev_loss)
-        dev_acc_hist.append(dev_acc)
-
-        # save best model
-        if dev_acc > best_dev_acc:
-            best_dev_acc = dev_acc
-            save_model(model, config)
-
-    # save histories
-    write_object(train_loss_hist, 'train_loss_hist', config)
-    write_object(train_acc_hist, 'train_acc_hist', config)
-    write_object(dev_loss_hist, 'dev_loss_hist', config)
-    write_object(dev_acc_hist, 'dev_acc_hist', config)
 
 def GAP(scores, y_true):
     confidence = np.max(scores, axis=1)
     y_pred = np.argmax(scores, axis=1)
 
-
     idxs = np.argsort(confidence[::-1])
-    confidence = confidence[idxs]
     y_pred = y_pred[idxs]
     y_true = y_true[idxs]
 
@@ -103,9 +74,10 @@ def GAP(scores, y_true):
     denum = np.arange(M) + 1
 
     precision = csum / denum
-    gap = np.sum(precision * rel) *1./ M
+    gap = np.sum(precision * rel) * 1.0 / M
 
     return gap
+
 
 def main():
     config = parse_args()
@@ -115,13 +87,13 @@ def main():
     log.info(config)
 
     # Getting data
-    images, labels, train_size, dev_size, train_init_op, dev_init_op = get_data(config)
-    data = (images, labels, train_size, dev_size, train_init_op, dev_init_op)
+    images, labels, test_size, test_init_op = get_test_data(config)
+    data = (images, labels, test_size, test_init_op)
 
-    # Defining model
-    model = get_model(config, images, labels)
+    # Load model
+    model = k.models.load_model(config.model_path)
 
-    train(model, data, config)
+    test(model, data, config)
 
 
 if __name__ == '__main__':
