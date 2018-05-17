@@ -110,6 +110,8 @@ data/*.csv
 
 .idea/
 
+.DS_Store
+
 *.h5
 
 logs/
