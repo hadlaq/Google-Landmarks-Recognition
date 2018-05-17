@@ -91,7 +91,7 @@ def train(model, data, config, log_dir):
         write_object(dev_acc_hist, 'dev_acc_hist', log_dir)
 
         # save best model
-        if dev_acc >= best_dev_acc:
+        if dev_acc > best_dev_acc:
             logging.info('Best model save in epoch: {}'.format(epoch))
             best_dev_acc = dev_acc
             save_model(model, config, log_dir)
