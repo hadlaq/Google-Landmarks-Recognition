@@ -69,6 +69,7 @@ def train(model, data, config):
     dev_loss_hist = []
     dev_acc_hist = []
     best_dev_acc = 0.0
+    best_model = None
     for epoch in range(1, num_epochs + 1):
         logging.info('Epoch {}/{}'.format(epoch, num_epochs))
 
@@ -87,7 +88,10 @@ def train(model, data, config):
         # save best model
         if dev_acc > best_dev_acc:
             best_dev_acc = dev_acc
-            save_model(model, config)
+            if best_model is None:
+                best_model = save_model(model, config)
+            else:
+                force_save_model(model, best_model)
 
     # save histories
     write_object(train_loss_hist, 'train_loss_hist', config)
