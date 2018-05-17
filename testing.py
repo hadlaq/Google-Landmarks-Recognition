@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow import keras as k
 import argparse
 import logging as log
+import numpy as np
 
 from model_utils import *
 from data_utils import *
@@ -85,6 +86,26 @@ def train(model, data, config):
     write_object(dev_loss_hist, 'dev_loss_hist', config)
     write_object(dev_acc_hist, 'dev_acc_hist', config)
 
+def GAP(scores, y_true):
+    confidence = np.max(scores, axis=1)
+    y_pred = np.argmax(scores, axis=1)
+
+
+    idxs = np.argsort(confidence[::-1])
+    confidence = confidence[idxs]
+    y_pred = y_pred[idxs]
+    y_true = y_true[idxs]
+
+    rel = (y_pred == y_true).astype(int)
+
+    csum = rel.cumsum()
+    M = len(y_true)
+    denum = np.arange(M) + 1
+
+    precision = csum / denum
+    gap = np.sum(precision * rel) *1./ M
+
+    return gap
 
 def main():
     config = parse_args()

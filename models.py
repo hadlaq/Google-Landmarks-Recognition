@@ -1,6 +1,26 @@
 import tensorflow as tf
 from tensorflow import keras as k
 
+def resnet50(config, images):
+    input_layer = k.layers.Input(tensor=images)
+    if config.imagenet:
+        resnet = k.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_tensor=input_layer)
+    else:
+        resnet = k.applications.resnet50.ResNet50(include_top=False, input_tensor=input_layer)
+    if config.freeze:
+        for layer in vgg16.layers:
+            layer.trainable = False
+
+    L2 = k.regularizers.l2(config.reg)
+    output = k.layers.Flatten()(resnet.output)
+    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=L2, name='fc1')(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=L2, name='fc2')(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(config.classes, name="output")(output)
+    model = k.Model(inputs=resnet.input, outputs=output)
+
+    return model
 
 def vgg16(config, images):
     input_layer = k.layers.Input(tensor=images)
