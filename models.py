@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras as k
 
+
 def resnet50(config, images):
     input_layer = k.layers.Input(tensor=images)
     if config.imagenet:
@@ -21,6 +22,7 @@ def resnet50(config, images):
     model = k.Model(inputs=resnet.input, outputs=output)
 
     return model
+
 
 def vgg16(config, images):
     input_layer = k.layers.Input(tensor=images)
@@ -62,7 +64,9 @@ def basic(config, images):
 
     output = k.layers.Flatten()(output)
     output = k.layers.Dense(4096, activation='relu')(output)
+    output = k.layers.Dropout(config.dropout)(output)
     output = k.layers.Dense(4096, activation='relu')(output)
+    output = k.layers.Dropout(config.dropout)(output)
     output = k.layers.Dense(config.classes)(output)
 
     model = k.Model(inputs=input_layer, outputs=output)

@@ -17,13 +17,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # model/training params
-    parser.add_argument('--model', type=str, default="vgg16", help='[basic, vgg16]')
+    parser.add_argument('--model', type=str, default="basic", help='[basic, vgg16, resnet50]')
     parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam]')
-    parser.add_argument('--lr', type=float, default=2e-3, help='learning rate')
+    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=5, help='batch size')
     parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
-    parser.add_argument('--dropout', type=float, default=0.0, help='dropout probability')
-    parser.add_argument('--epochs', type=int, default=2, help='number of epochs')
+    parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
+    parser.add_argument('--epochs', type=int, default=5, help='number of epochs')
     parser.add_argument('--imagenet', type=bool, default=True, help='Use imagenet weights')
     parser.add_argument('--freeze', type=bool, default=True, help='Freeze imagenet weights')
 
