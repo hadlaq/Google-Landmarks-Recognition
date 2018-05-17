@@ -42,11 +42,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def train_epoch(model, data, config):
+def train_epoch(model, data, config, tensorboard):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(train_init_op)
     steps = int(ceil(train_size * 1.0 / config.batch_size))
-    history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose)
+    history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose,
+                        callbacks=[tensorboard])
 
     loss = history.history['loss'][-1]
     accuracy = history.history['get_accuracy'][-1]
@@ -64,6 +65,7 @@ def eval_epoch(model, data, config):
 
 def train(model, data, config, log_dir):
     num_epochs = config.epochs
+    tensorboard = k.callbacks.TensorBoard(log_dir=log_dir, write_graph=True, write_images=False)
 
     train_loss_hist = []
     train_acc_hist = []
@@ -73,7 +75,7 @@ def train(model, data, config, log_dir):
     for epoch in range(1, num_epochs + 1):
         logging.info('Epoch {}/{}'.format(epoch, num_epochs))
 
-        train_loss, train_acc = train_epoch(model, data, config)
+        train_loss, train_acc = train_epoch(model, data, config, tensorboard)
         logging.info('Train loss %f accuracy %f' % (train_loss, train_acc))
 
         dev_loss, dev_acc = eval_epoch(model, data, config)
