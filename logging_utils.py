@@ -48,7 +48,7 @@ def set_test_logger(config):
     i = 0
     while os.path.exists(log_file_path):
         i += 1
-        log_file_path = os.path.join(config.model_dir, 'console' + str(i) + '.log')
+        log_file_path = os.path.join(config.model_dir, 'test' + str(i) + '.log')
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -93,20 +93,3 @@ def write_object(obj, name, config):
 
     writer(path, obj)
 
-
-def save_model(model, config):
-    save_path = os.path.join(config.logs_dir, get_log_path(config), 'best_model.h5')
-    i = 0
-    while os.path.exists(save_path):
-        i += 1
-        save_path = os.path.join(config.logs_dir, get_log_path(config), 'best_model' + str(i) + '.h5')
-
-    model.save(save_path)
-    logging.info('Best model saved in {}'.format(save_path))
-
-    return save_path
-
-
-def force_save_model(model, save_path):
-    model.save(save_path)
-    logging.info('Best model saved in {}'.format(save_path))
