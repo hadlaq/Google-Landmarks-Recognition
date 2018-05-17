@@ -47,8 +47,7 @@ def test_GAP(model, data, config):
     Y_pred = None
     while True:
         try:
-            x = k.backend.get_session().run(images)
-            y = k.backend.get_session().run(labels)
+            x, y = k.backend.get_session().run([images, labels])
             y_pred = model.predict(x, batch_size=x.shape[0], verbose=config.verbose)
             if Y is None:
                 Y = y
