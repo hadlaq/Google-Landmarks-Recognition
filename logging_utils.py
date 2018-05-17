@@ -46,6 +46,7 @@ def set_logger(config):
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(logging.Formatter('%(message)s'))
         logger.addHandler(stream_handler)
+    return log_dir
 
 
 def set_test_logger(config):
@@ -85,16 +86,6 @@ def reader(path):
     return obj
 
 
-def write_object(obj, name, config):
-    path = os.path.join(config.logs_dir, get_log_path(config), name)
-    i = 0
-    while os.path.exists(path):
-        i += 1
-        path = os.path.join(config.logs_dir, get_log_path(config), name + str(i))
-
+def write_object(obj, name, path):
+    path = os.path.join(path, name)
     writer(path, obj)
-
-def test():
-    print(count_dirs('logs'))
-
-test()

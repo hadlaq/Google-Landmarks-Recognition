@@ -85,21 +85,16 @@ def train(model, data, config, log_dir):
         dev_loss_hist.append(dev_loss)
         dev_acc_hist.append(dev_acc)
         # save histories
-        write_object(train_loss_hist, 'train_loss_hist', config)
-        write_object(train_acc_hist, 'train_acc_hist', config)
-        write_object(dev_loss_hist, 'dev_loss_hist', config)
-        write_object(dev_acc_hist, 'dev_acc_hist', config)
+        write_object(train_loss_hist, 'train_loss_hist', log_dir)
+        write_object(train_acc_hist, 'train_acc_hist', log_dir)
+        write_object(dev_loss_hist, 'dev_loss_hist', log_dir)
+        write_object(dev_acc_hist, 'dev_acc_hist', log_dir)
 
         # save best model
-        if dev_acc > best_dev_acc:
+        if dev_acc >= best_dev_acc:
+            logging.info('Best model save in epoch: {}'.format(epoch))
             best_dev_acc = dev_acc
             save_model(model, config, log_dir)
-
-    # save histories
-    write_object(train_loss_hist, 'train_loss_hist', config)
-    write_object(train_acc_hist, 'train_acc_hist', config)
-    write_object(dev_loss_hist, 'dev_loss_hist', config)
-    write_object(dev_acc_hist, 'dev_acc_hist', config)
 
 
 def main():
