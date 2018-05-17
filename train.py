@@ -3,6 +3,7 @@ from tensorflow import keras as k
 import argparse
 import logging as log
 from math import ceil
+import time
 
 from model_utils import *
 from data_utils import *
@@ -74,6 +75,7 @@ def train(model, data, config, log_dir):
     best_dev_acc = 0.0
     for epoch in range(1, num_epochs + 1):
         logging.info('Epoch {}/{}'.format(epoch, num_epochs))
+        tic = time.time()
 
         train_loss, train_acc = train_epoch(model, data, config, tensorboard)
         logging.info('Train loss %f accuracy %f' % (train_loss, train_acc))
@@ -97,6 +99,8 @@ def train(model, data, config, log_dir):
             logging.info('Best model save in epoch: {}'.format(epoch))
             best_dev_acc = dev_acc
             save_model(model, config, log_dir)
+
+        logging.info("Epoch time: {}".format(time.time() - tic))
 
 
 def main():
