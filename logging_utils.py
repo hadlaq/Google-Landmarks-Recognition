@@ -103,3 +103,10 @@ def save_model(model, config):
 
     model.save(save_path)
     logging.info('Best model saved in {}'.format(save_path))
+
+    return save_path
+
+
+def force_save_model(model, save_path):
+    model.save(save_path)
+    logging.info('Best model saved in {}'.format(save_path))
