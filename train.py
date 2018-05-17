@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow import keras as k
 import argparse
 import logging as log
+from math import ceil
 
 from model_utils import *
 from data_utils import *
@@ -44,7 +45,7 @@ def parse_args():
 def train_epoch(model, data, config):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(train_init_op)
-    steps = int(train_size * 1.0 / config.batch_size)
+    steps = int(ceil(train_size * 1.0 / config.batch_size))
     history = model.fit(epochs=1, steps_per_epoch=steps, verbose=config.verbose)
 
     loss = history.history['loss'][-1]
@@ -55,7 +56,7 @@ def train_epoch(model, data, config):
 def eval_epoch(model, data, config):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(dev_init_op)
-    steps = int(dev_size * 1.0 / config.batch_size)
+    steps = int(ceil(dev_size * 1.0 / config.batch_size))
     loss, accuracy = model.evaluate(steps=steps, verbose=config.verbose)
 
     return loss, accuracy
