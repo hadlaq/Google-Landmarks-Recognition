@@ -63,11 +63,8 @@ def test_GAP(model, data, config):
 
 
 def GAP(scores, y_true):
-    print(np.sum(scores))
-    print(y_true)
     confidence = np.max(scores, axis=1)
     y_pred = np.argmax(scores, axis=1)
-    print(y_pred)
     idxs = np.argsort(confidence[::-1])
     y_pred = y_pred[idxs]
     y_true = y_true[idxs]

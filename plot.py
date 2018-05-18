@@ -6,7 +6,7 @@ sns.set()
 sns.set_context("paper", font_scale=1.5)
 
 
-model_path = 'model=vgg16_optimizer:adam_lr=0.0001_reg=0.0001_batch_size=10_epochs=5_dropout=0.0'
+model_path = 'model=vgg16_optimizer=adam_lr=0.002_reg=5e-05_batch_size=5_epochs=2_dropout=0.0/1'
 
 train_loss = reader('logs/'+model_path+'/train_loss_hist')
 train_acc = reader('logs/'+model_path+'/train_acc_hist')
@@ -26,7 +26,7 @@ plt.savefig('logs/'+model_path+'/loss.pdf')
 # plot acc
 plt.figure()
 plt.plot(epochs, train_acc, label='train')
-plt.plot(epochs, dev_acc, label='val')
+plt.plot(epochs, dev_acc, label='dev')
 plt.title('Classification accuracy history')
 plt.xlabel('Epoch')
 plt.ylabel('Clasification accuracy')

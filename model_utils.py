@@ -52,7 +52,7 @@ def save_model(model, config, log_dir):
 
 
 def load_model(config, images, labels):
-    model = k.models.load_model(config.model_path, compile=False)
+    model = k.models.load_model(os.path.join(config.model_dir, 'best_model.h5'), compile=False)
     model.layers.pop(0)
     new_input = k.layers.Input(tensor=images)
     new_output = model(new_input)
@@ -63,12 +63,12 @@ def load_model(config, images, labels):
         target_tensors=[labels],
         metrics=[get_accuracy]
     )
-    logging.info('Loaded model from {}'.format(config.model_path))
+    logging.info('Loaded model from {}'.format(os.path.join(config.model_dir, 'best_model.h5')))
     return model
 
 
 def load_model_with_no_input(config):
-    model = k.models.load_model(config.model_path, compile=False)
+    model = k.models.load_model(os.path.join(config.model_dir, 'best_model.h5'), compile=False)
     model.layers.pop(0)
     new_input = k.layers.Input(shape=(config.input_size, config.input_size, 3))
     new_output = model(new_input)
@@ -77,5 +77,5 @@ def load_model_with_no_input(config):
         optimizer=k.optimizers.SGD(0.0),  # not used
         loss=get_loss
     )
-    logging.info('Loaded model from {}'.format(config.model_path))
+    logging.info('Loaded model from {}'.format(os.path.join(config.model_dir, 'best_model.h5')))
     return model
