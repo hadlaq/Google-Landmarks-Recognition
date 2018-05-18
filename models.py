@@ -14,10 +14,6 @@ def resnet50(config, images):
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(resnet.output)
-    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=L2, name='fc1')(output)
-    output = k.layers.Dropout(config.dropout)(output)
-    output = k.layers.Dense(4096, activation='relu', kernel_regularizer=L2, name='fc2')(output)
-    output = k.layers.Dropout(config.dropout)(output)
     output = k.layers.Dense(config.classes, name="output")(output)
     model = k.Model(inputs=resnet.input, outputs=output)
 
