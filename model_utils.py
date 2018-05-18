@@ -19,6 +19,8 @@ def get_optimizer(config):
     lr = config.lr
     if config.optimizer == 'adam':
         optimizer = k.optimizers.Adam(lr)
+    elif config.optimizer == "nesterov":
+        optimizer = k.optimizers.SGD(lr, momentum=config.momentum, nesterov=True)
     else:
         optimizer = k.optimizers.SGD(lr)
 

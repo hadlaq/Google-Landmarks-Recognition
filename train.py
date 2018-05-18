@@ -19,12 +19,13 @@ def parse_args():
 
     # model/training params
     parser.add_argument('--model', type=str, default="basic", help='[basic, vgg16, resnet50]')
-    parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam]')
+    parser.add_argument('--optimizer', type=str, default="nesterov", help='[sgd, adam, nesterov]')
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
-    parser.add_argument('--batch_size', type=int, default=5, help='batch size')
+    parser.add_argument('--momentum', type=float, default=0.9, help='momentum when used')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size')
     parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
-    parser.add_argument('--epochs', type=int, default=5, help='number of epochs')
+    parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
     parser.add_argument('--imagenet', type=bool, default=True, help='use imagenet weights')
     parser.add_argument('--freeze', type=bool, default=True, help='freeze imagenet weights')
     parser.add_argument('--load_path', type=str, default=None, help='path to model to load (None to start from beginnig)')
@@ -39,7 +40,7 @@ def parse_args():
     parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='path to file of dev images paths')
     parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='path to file of dev images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
-    parser.add_argument('--classes', type=int, default=6, help='number of classes')
+    parser.add_argument('--classes', type=int, default=100, help='number of classes')
 
     return parser.parse_args()
 
