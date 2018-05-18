@@ -26,6 +26,9 @@ def get_optimizer(config):
 
 
 def get_model(config, images, labels):
+    if config.load_path is not None:
+        model = k.models.load_model(config.load_path)
+        return model  # compiled
     if config.model == "vgg16":
         model = vgg16(config, images)
     elif config.model == "resnet50":
@@ -43,7 +46,7 @@ def get_model(config, images, labels):
     return model
 
 
-def save_model(model, config, log_dir):
+def save_model(model, log_dir):
     save_path = os.path.join(log_dir, 'best_model.h5')
     model.save(save_path)
     logging.info('Best model saved in {}'.format(save_path))

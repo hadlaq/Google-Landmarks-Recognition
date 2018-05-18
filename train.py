@@ -25,8 +25,9 @@ def parse_args():
     parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
     parser.add_argument('--epochs', type=int, default=5, help='number of epochs')
-    parser.add_argument('--imagenet', type=bool, default=True, help='Use imagenet weights')
-    parser.add_argument('--freeze', type=bool, default=True, help='Freeze imagenet weights')
+    parser.add_argument('--imagenet', type=bool, default=True, help='use imagenet weights')
+    parser.add_argument('--freeze', type=bool, default=True, help='freeze imagenet weights')
+    parser.add_argument('--load_path', type=str, default=None, help='path to model to load (None to start from beginnig)')
 
     # logging
     parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
@@ -98,7 +99,7 @@ def train(model, data, config, log_dir):
         if dev_acc > best_dev_acc:
             logging.info('Best model save in epoch: {}'.format(epoch))
             best_dev_acc = dev_acc
-            save_model(model, config, log_dir)
+            save_model(model, log_dir)
 
         logging.info("Epoch time: {}".format(time.time() - tic))
 
