@@ -29,7 +29,7 @@ def get_optimizer(config):
 
 def get_model(config, images, labels):
     if config.load_path is not None:
-        model = load_model(config, images, labels, trainable=False)
+        model = load_model_train(config, images, labels)
         return model  # compiled
     if config.model == "vgg16":
         model = vgg16(config, images)
@@ -55,8 +55,23 @@ def save_model(model, log_dir):
 
     return save_path
 
+def load_model_train(config, images, labels):
+    path = os.path.join(config.load_path, 'best_model.h5'))
+    model = k.models.load_model(path, compile=False)
+    model.layers.pop(0)
+    new_input = k.layers.Input(tensor=images)
+    new_output = model(new_input)
+    model = k.Model(new_input, new_output)
+    model.compile(
+        optimizer=get_optimizer(config),
+        loss=get_loss,
+        target_tensors=[labels],
+        metrics=[get_accuracy]
+    )
+    logging.info('Loaded model from {}'.format(os.path.join(config.load_path, 'best_model.h5')))
+    return model
 
-def load_model(config, images, labels, trainable=False):
+def load_model(config, images, labels):
     path = os.path.join(config.model_dir, 'best_model.h5')
     if trainable:
         path = config.load_path
