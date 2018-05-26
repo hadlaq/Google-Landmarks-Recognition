@@ -56,7 +56,7 @@ def save_model(model, log_dir):
     return save_path
 
 def load_model_train(config, images, labels):
-    path = os.path.join(config.load_path, 'best_model.h5'))
+    path = os.path.join(config.load_path, 'best_model.h5')
     model = k.models.load_model(path, compile=False)
     model.layers.pop(0)
     new_input = k.layers.Input(tensor=images)
