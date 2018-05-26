@@ -40,6 +40,7 @@ def parse_args():
     parser.add_argument('--dev_images', type=str, default="./data/dev_images.csv", help='path to file of dev images paths')
     parser.add_argument('--dev_labels', type=str, default="./data/dev_labels.csv", help='path to file of dev images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
+    parser.add_argument('--max', type=int, default=10000, help='max number of examples to train')
     parser.add_argument('--classes', type=int, default=100, help='number of classes')
 
     return parser.parse_args()

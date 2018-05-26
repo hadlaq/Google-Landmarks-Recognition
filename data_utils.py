@@ -2,7 +2,7 @@ import tensorflow as tf
 import logging
 
 
-def read_images_to_lists(paths_file, labels_file):
+def read_images_to_lists(paths_file, labels_file, N):
     with open(paths_file) as f:
         filenames = f.readlines()
         filenames = [x.strip() for x in filenames]
@@ -16,6 +16,8 @@ def read_images_to_lists(paths_file, labels_file):
             labels_dict[label] = i
             i += 1
         labels = [labels_dict[x] for x in labels]
+    if len(filenames) > N:
+        return filenames[:N], labels[:N]
     return filenames, labels
 
 
@@ -27,8 +29,8 @@ def image_parse_function(filename, label):
     return image, label
 
 
-def get_dataset(paths_file, labels_file, batch_size):
-    filenames, labels = read_images_to_lists(paths_file, labels_file)
+def get_dataset(paths_file, labels_file, batch_size, max_N):
+    filenames, labels = read_images_to_lists(paths_file, labels_file, max_N)
     dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
     dataset = dataset.shuffle(len(filenames))
     dataset = dataset.map(image_parse_function, num_parallel_calls=4)
@@ -40,8 +42,8 @@ def get_dataset(paths_file, labels_file, batch_size):
 
 
 def get_data(config):
-    dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size)
-    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size)
+    dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size, config.max)
+    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size, config.max)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     images, labels = iterator.get_next()
