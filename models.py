@@ -5,13 +5,12 @@ from tensorflow import keras as k
 def resnet50(config, images):
     input_layer = k.layers.Input(tensor=images)
     if config.imagenet:
-        resnet = k.applications.resnet50.ResNet50(include_top=True, weights='imagenet', input_tensor=input_layer)
+        resnet = k.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_tensor=input_layer)
     else:
-        resnet = k.applications.resnet50.ResNet50(include_top=True, input_tensor=input_layer)
+        resnet = k.applications.resnet50.ResNet50(include_top=False, input_tensor=input_layer)
     if config.freeze:
         for layer in resnet.layers:
             layer.trainable = False
-        resnet.layers[-1].trainabale = True
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(resnet.output)
