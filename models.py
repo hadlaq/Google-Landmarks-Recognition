@@ -31,6 +31,8 @@ def xception(config, images):
     if config.freeze:
         for layer in xc.layers:
             layer.trainable = False
+        for layer in xc.layers[-6:]:
+            layer.trainable = True
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(xc.output)
