@@ -34,7 +34,11 @@ def xception(config, images):
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(xc.output)
-    output = k.layers.Dense(config.classes, name="output", kernel_regularizer=L2)(output)
+    output = k.layers.Dense(2048, activation='relu', kernel_regularizer=L2, name="fc1")(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(2048, activation='relu', kernel_regularizer=L2, name="fc2")(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(config.classes, name="output")(output)
     model = k.Model(inputs=xc.input, outputs=output)
 
     return model
