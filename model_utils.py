@@ -35,6 +35,8 @@ def get_model(config, images, labels):
         model = vgg16(config, images)
     elif config.model == "resnet50":
         model = resnet50(config, images)
+    elif config.model == "xception":
+        model = xception(config, images)
     else:
         model = basic(config, images)
 
@@ -55,6 +57,7 @@ def save_model(model, log_dir):
 
     return save_path
 
+
 def load_model_train(config, images, labels):
     path = os.path.join(config.load_path, 'best_model.h5')
     model = k.models.load_model(path, compile=False)
@@ -70,6 +73,7 @@ def load_model_train(config, images, labels):
     )
     logging.info('Loaded model from {}'.format(os.path.join(config.load_path, 'best_model.h5')))
     return model
+
 
 def load_model(config, images, labels):
     path = os.path.join(config.model_dir, 'best_model.h5')
