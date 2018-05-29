@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--imagenet', type=bool, default=True, help='use imagenet weights')
     parser.add_argument('--freeze', type=bool, default=True, help='freeze imagenet weights')
-    parser.add_argument('--load_path', type=str, default=None, help='path to model to load (None to start from beginnig)')
+    parser.add_argument('--model_dir', type=str, default=None, help='path to model to load (None to start from beginnig)')
 
     # logging
     parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
