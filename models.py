@@ -22,6 +22,24 @@ def resnet50(config, images):
     return model
 
 
+def xception(config, images):
+    input_layer = k.layers.Input(tensor=images)
+    if config.imagenet:
+        xc = k.applications.xception.Xception(include_top=False, weights='imagenet', input_tensor=input_layer)
+    else:
+        xc = k.applications.xception.Xception(include_top=False, input_tensor=input_layer)
+    if config.freeze:
+        for layer in xc.layers:
+            layer.trainable = False
+
+    L2 = k.regularizers.l2(config.reg)
+    output = k.layers.Flatten()(xc.output)
+    output = k.layers.Dense(config.classes, name="output")(output)
+    model = k.Model(inputs=xc.input, outputs=output)
+
+    return model
+
+
 def vgg16(config, images):
     input_layer = k.layers.Input(tensor=images)
     if config.imagenet:
