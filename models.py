@@ -11,6 +11,8 @@ def resnet50(config, images):
     if config.freeze:
         for layer in resnet.layers:
             layer.trainable = False
+        for layer in resnet.layers[:-33]:
+            layer.trainable = True
 
     L2 = k.regularizers.l2(config.reg)
     output = k.layers.Flatten()(resnet.output)
