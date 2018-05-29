@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum when used')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
-    parser.add_argument('--reg', type=float, default=5e-5, help='regularization term')
+    parser.add_argument('--reg', type=float, default=5e-3, help='regularization term')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--imagenet', type=bool, default=True, help='use imagenet weights')
