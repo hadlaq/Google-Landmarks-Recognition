@@ -37,6 +37,8 @@ def get_model(config, images, labels):
         model = resnet50(config, images)
     elif config.model == "xception":
         model = xception(config, images)
+    elif config.model == "inceptionv2":
+        model = inceptionv2(config, images)
     else:
         model = basic(config, images)
 

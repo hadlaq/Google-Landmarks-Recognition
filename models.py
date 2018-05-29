@@ -46,6 +46,29 @@ def xception(config, images):
     return model
 
 
+def inceptionv2(config, images):
+    input_layer = k.layers.Input(tensor=images)
+    if config.imagenet:
+        inceptionv2 = k.applications.inception_resnet_v2.InceptionResNetV2(include_top=False, weights='imagenet', input_tensor=input_layer)
+    else:
+        inceptionv2 = k.applications.inception_resnet_v2.InceptionResNetV2(include_top=False, input_tensor=input_layer)
+    if config.freeze:
+        for layer in inceptionv2.layers:
+            layer.trainable = False
+
+    L2 = k.regularizers.l2(config.reg)
+    output = k.layers.GlobalAveragePooling2D(name='avg_pool')(inceptionv2.output)
+    output = k.layers.Dense(2048, activation='relu', kernel_regularizer=L2, name="fc1")(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(2048, activation='relu', kernel_regularizer=L2, name="fc2")(output)
+    output = k.layers.Dropout(config.dropout)(output)
+    output = k.layers.Dense(config.classes, name="output")(output)
+
+    model = k.Model(inputs=inceptionv2.input, outputs=output)
+
+    return model
+
+
 def vgg16(config, images):
     input_layer = k.layers.Input(tensor=images)
     if config.imagenet:

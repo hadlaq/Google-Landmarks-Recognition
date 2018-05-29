@@ -18,7 +18,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # model/training params
-    parser.add_argument('--model', type=str, default="xception", help='[basic, vgg16, resnet50, xception]')
+    parser.add_argument('--model', type=str, default="inceptionv2", help='[basic, vgg16, resnet50, xception, inceptionv2]')
     parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam, nesterov]')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum when used')
