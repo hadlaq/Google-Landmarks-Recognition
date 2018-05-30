@@ -1,6 +1,7 @@
 import numpy as np
 import argparse
 from matplotlib import pyplot as plt
+from scipy.ndimage.filters import gaussian_filter1d
 
 from model_utils import *
 from data_utils import *
@@ -20,6 +21,11 @@ def parse_args():
     parser.add_argument('--max', type=int, default=100, help='max number of examples to train')
 
     return parser.parse_args()
+
+def blur_image(X, sigma=1):
+    X = gaussian_filter1d(X, sigma, axis=1)
+    X = gaussian_filter1d(X, sigma, axis=2)
+    return X
 
 
 def show_image(data, label):
@@ -79,12 +85,24 @@ def class_viz(model, data):
     plt.imshow(x[0])
     plt.show()
     noise = np.random.uniform(0, 1, size=(1, 224, 224, 3))
+    blur_every = 10
+    max_jitter = 16
     i = 0
     while True:
         try:
             i += 1
+
+            ox, oy = np.random.randint(-max_jitter, max_jitter+1, 2)
+            noise = np.roll(np.roll(noise, ox, 1), oy, 2)
+
             dnoise, = k.backend.get_session().run([dx], feed_dict={inp: noise})
             noise += dnoise[0]
+
+            noise = np.roll(np.roll(noise, -ox, 1), -oy, 2)
+
+            if t % blur_every == 0:
+                noise = blur_image(noise, sigma=0.5)
+
             if i % 10 == 0:
                 plt.imshow(noise[0])
                 plt.show()
