@@ -22,6 +22,20 @@ def parse_args():
     return parser.parse_args()
 
 
+def show_image(data, label):
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
+    k.backend.get_session().run(train_init_op)
+    k.backend.set_learning_phase(0)
+    while True:
+        try:
+            x, y = k.backend.get_session().run([images, labels])
+            if y[0] == label:
+                plt.imshow(x[0])
+                plt.show()
+        except tf.errors.OutOfRangeError:
+            break
+
+
 def saliency_map(model, data):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
     k.backend.get_session().run(train_init_op)
@@ -54,6 +68,53 @@ def saliency_map(model, data):
             break
 
 
+def class_viz(model, data):
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
+    k.backend.get_session().run(train_init_op)
+    k.backend.set_learning_phase(0)
+    x, y = k.backend.get_session().run([images, labels])
+    inp = model.inputs[0]
+    out = model.outputs[0][:, y[0]]
+    dx = k.backend.gradients(out, inp)
+    plt.imshow(x[0])
+    plt.show()
+    noise = np.random.uniform(0, 1, size=(1, 224, 224, 3))
+    i = 0
+    while True:
+        try:
+            i += 1
+            dnoise, = k.backend.get_session().run([dx], feed_dict={inp: noise})
+            noise += dnoise[0]
+            if i % 10 == 0:
+                plt.imshow(noise[0])
+                plt.show()
+        except tf.errors.OutOfRangeError:
+            break
+
+
+def confusion_matrix(model, data):
+    images, labels, train_size, dev_size, train_init_op, dev_init_op = data
+    k.backend.get_session().run(train_init_op)
+    k.backend.set_learning_phase(0)
+    mat = np.zeros((100, 100))
+    i = 0
+    while True:
+        try:
+            x, y = k.backend.get_session().run([images, labels])
+            inp = model.inputs[0]
+            scores, = k.backend.get_session().run([model.outputs[0]], feed_dict={inp: x})
+            i += 1
+            r = y[0]
+            c = np.argmax(scores)
+            mat[r, c] += 1
+            if i == 100:
+                break
+        except tf.errors.OutOfRangeError:
+            break
+    plt.matshow(mat)
+    plt.show()
+
+
 def main():
     config = parse_args()
 
@@ -64,8 +125,10 @@ def main():
     # Load model
     model = load_model_with_no_input(config)
 
-    saliency_map(model, data)
-
+    # saliency_map(model, data)
+    # confusion_matrix(model, data)
+    # show_image(data, 0)
+    class_viz(model, data)
 
 if __name__ == '__main__':
     main()
