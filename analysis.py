@@ -24,21 +24,31 @@ def parse_args():
 
 def saliency_map(model, data):
     images, labels, train_size, dev_size, train_init_op, dev_init_op = data
-    k.backend.get_session().run(dev_init_op)
+    k.backend.get_session().run(train_init_op)
+    k.backend.set_learning_phase(0)
     while True:
         try:
             x, y = k.backend.get_session().run([images, labels])
+
+            print(y[0])
 
             inp = model.inputs[0]
             out = model.outputs[0][:, y[0]]
 
             dx = k.backend.gradients(out, inp)
 
-            smap, = k.backend.get_session().run([dx], feed_dict={inp: x})
+            smap, scores = k.backend.get_session().run([dx, model.outputs[0]], feed_dict={inp: x})
+
             smap = np.absolute(np.max(smap[0][0], axis=2))
 
-            plt.imshow(x[0])
-            plt.imshow(smap, alpha=0.8)
+
+            print(np.argmax(scores))
+            print()
+
+            f, axarr = plt.subplots(1, 2)
+            axarr[0].imshow(x[0])
+            axarr[1].imshow(x[0])
+            axarr[1].imshow(smap, alpha=0.8, cmap=plt.cm.hot)
             plt.show()
         except tf.errors.OutOfRangeError:
             break

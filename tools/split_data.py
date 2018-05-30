@@ -18,7 +18,7 @@ def shuff(list1, list2):
 
 
 def main():
-    data = pd.read_csv('../data/all.csv', header=None, usecols=[0,1])
+    data = pd.read_csv('../data/all.csv', header=None, usecols=[0, 1])
 
     images = list(data[0])
     labels = list(data[1])

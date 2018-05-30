@@ -115,7 +115,7 @@ def main():
     images_folder = '../data/images/'
     unzip_files(data_folder)
 
-    num_categories = 6  # -1 for all
+    num_categories = 100  # -1 for all
     file_path = data_folder + "train.csv"
     list_of_categories = get_list_of_categories(num_categories, file_path)
     download_images(file_path, images_folder, list_of_categories)
