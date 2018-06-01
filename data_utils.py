@@ -29,12 +29,25 @@ def image_parse_function(filename, label):
     return image, label
 
 
-def get_dataset(paths_file, labels_file, batch_size, max_N):
+def train_preprocess(image, label):
+    image = tf.image.random_flip_left_right(image)
+
+    image = tf.image.random_brightness(image, max_delta=32.0 / 255.0)
+    image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+
+    # Make sure the image is still in [0, 1]
+    image = tf.clip_by_value(image, 0.0, 1.0)
+
+    return image, label
+
+
+def get_dataset(paths_file, labels_file, batch_size, max_N, augmentation):
     filenames, labels = read_images_to_lists(paths_file, labels_file, max_N)
     dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
     dataset = dataset.shuffle(len(filenames))
     dataset = dataset.map(image_parse_function, num_parallel_calls=4)
-    # dataset = dataset.map(train_preprocess, num_parallel_calls=4)
+    if augmentation:
+        dataset = dataset.map(train_preprocess, num_parallel_calls=4)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 
@@ -42,8 +55,8 @@ def get_dataset(paths_file, labels_file, batch_size, max_N):
 
 
 def get_data(config):
-    dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size, config.max)
-    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size, config.max)
+    dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size, config.max, config.augmentation)
+    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size, config.max, config.augmentation)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     images, labels = iterator.get_next()
@@ -58,7 +71,7 @@ def get_data(config):
 
 
 def get_test_data(config):
-    test_dataset, test_size = get_dataset(config.test_images, config.test_labels, config.batch_size)
+    test_dataset, test_size = get_dataset(config.test_images, config.test_labels, config.batch_size, 900000000, False)
 
     iterator = tf.data.Iterator.from_structure(test_dataset.output_types, test_dataset.output_shapes)
     images, labels = iterator.get_next()

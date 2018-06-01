@@ -79,6 +79,7 @@ def class_viz(model, data):
     k.backend.get_session().run(train_init_op)
     k.backend.set_learning_phase(0)
     x, y = k.backend.get_session().run([images, labels])
+    print(y[0])
     inp = model.inputs[0]
     out = model.outputs[0][:, y[0]]
     dx = k.backend.gradients(out, inp)
@@ -100,8 +101,8 @@ def class_viz(model, data):
 
             noise = np.roll(np.roll(noise, -ox, 1), -oy, 2)
 
-            if t % blur_every == 0:
-                noise = blur_image(noise, sigma=0.5)
+            if i % blur_every == 0:
+                noise = blur_image(noise, sigma=0.35)
 
             if i % 10 == 0:
                 plt.imshow(noise[0])
@@ -145,8 +146,8 @@ def main():
 
     # saliency_map(model, data)
     # confusion_matrix(model, data)
-    # show_image(data, 0)
-    class_viz(model, data)
+    show_image(data, 88)
+    # class_viz(model, data)
 
 if __name__ == '__main__':
     main()
