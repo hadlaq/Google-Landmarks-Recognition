@@ -10,7 +10,7 @@ from data_utils import *
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--model_dir', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.0001_reg=5e-05_batch_size=32_epochs=100_dropout=0.5/3/", help='path to model to test')
+    parser.add_argument('--model_dir', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.0001_reg=5e-05_batch_size=64_epochs=100_dropout=0.5/4/", help='path to model to test')
 
     parser.add_argument('--train_images', type=str, default="./data/train_images.csv", help='path to file of train images paths')
     parser.add_argument('--train_labels', type=str, default="./data/train_labels.csv", help='path to file of train images labels')

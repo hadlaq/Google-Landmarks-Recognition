@@ -56,7 +56,7 @@ def get_dataset(paths_file, labels_file, batch_size, max_N, augmentation):
 
 def get_data(config):
     dataset_train, train_size = get_dataset(config.train_images, config.train_labels, config.batch_size, config.max, config.augmentation)
-    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size, config.max, config.augmentation)
+    dataset_dev, dev_size = get_dataset(config.dev_images, config.dev_labels, config.batch_size, config.max, False)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     images, labels = iterator.get_next()

@@ -21,11 +21,13 @@ def parse_args():
     parser.add_argument('--verbose', type=int, default=1, help='print every x batch')
 
     # other params
-    parser.add_argument('--model_dir', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.001_reg=5e-05_batch_size=10_epochs=5_dropout=0.0/", help='path to model to test')
-    parser.add_argument('--test_images', type=str, default="./data/test_images.csv", help='path to file of test images paths')
-    parser.add_argument('--test_labels', type=str, default="./data/test_labels.csv", help='path to file of test images labels')
+    parser.add_argument('--optimizer', type=str, default="adam", help='[sgd, adam, nesterov]')
+    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('--model_dir', type=str, default="./logs/model=vgg16_optimizer=adam_lr=0.0001_reg=5e-05_batch_size=64_epochs=100_dropout=0.5/3/", help='path to model to test')
+    parser.add_argument('--test_images', type=str, default="./data/dev_images.csv", help='path to file of test images paths')
+    parser.add_argument('--test_labels', type=str, default="./data/dev_labels.csv", help='path to file of test images labels')
     parser.add_argument('--input_size', type=int, default=224, help='input is input_size x input_size x 3')
-    parser.add_argument('--batch_size', type=int, default=5, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 
     return parser.parse_args()
 
@@ -47,8 +49,7 @@ def test_GAP(model, data, config):
     while True:
         try:
             x, y = k.backend.get_session().run([images, labels])
-            print(np.sum(x))
-            print(y)
+            
             y_pred = model.predict(x, batch_size=x.shape[0], verbose=config.verbose)
             if Y is None:
                 Y = y
