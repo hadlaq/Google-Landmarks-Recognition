@@ -77,6 +77,20 @@ def load_model(config, images, labels):
     return model
 
 
+def load_model_from_path(config, path):
+    model = k.models.load_model(os.path.join(path, 'best_model.h5'), compile=False)
+    model.layers.pop(0)
+    new_input = k.layers.Input(shape=(config.input_size, config.input_size, 3))
+    new_output = model(new_input)
+    model = k.Model(new_input, new_output)
+    model.compile(
+        optimizer=k.optimizers.SGD(0.0),  # not used
+        loss=get_loss
+    )
+    logging.info('Loaded model from {}'.format(os.path.join(path, 'best_model.h5')))
+    return model
+
+
 def load_model_with_no_input(config):
     model = k.models.load_model(os.path.join(config.model_dir, 'best_model.h5'), compile=False)
     model.layers.pop(0)
