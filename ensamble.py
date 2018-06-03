@@ -30,13 +30,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_y_pred(model, images, labels):
+def test(models, accs, data):
+    images, labels, test_size, test_init_op = data
+    k.backend.get_session().run(test_init_op)
     Y = None
     Y_pred = None
     while True:
         try:
             x, y = k.backend.get_session().run([images, labels])
-            y_pred = model.predict(x, batch_size=x.shape[0])
+            y_pred = models[0].predict(x, batch_size=x.shape[0]) * accs[0]
+            for i in range(1, len(models)):
+                y_pred += models[i].predict(x, batch_size=x.shape[0]) * accs[i]
             if Y is None:
                 Y = y
                 Y_pred = y_pred
@@ -45,17 +49,6 @@ def get_y_pred(model, images, labels):
                 Y_pred = np.concatenate((Y_pred, y_pred), axis=0)
         except tf.errors.OutOfRangeError:
             break
-    return Y, Y_pred
-
-
-def test(models, accs, data):
-    images, labels, test_size, test_init_op = data
-    k.backend.get_session().run(test_init_op)
-    Y, Y_pred = get_y_pred(models[0], images, labels)
-    Y_pred *= accs[0]
-    for i in range(1, len(models)):
-        _, Y_pred_i = get_y_pred(models[i], images, labels)
-        Y_pred += Y_pred_i * accs[i]
 
     logging.info(accuracy(Y_pred, Y))
     logging.info(GAP(Y_pred, Y))
